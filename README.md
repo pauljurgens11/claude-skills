@@ -36,6 +36,14 @@ Wispr Flow the amulet, Messaging the cape, Shipping the blade. A new tier unlock
 gives the legendary item. Total level gives titles from Newcomer to Ascended. To preview later gear
 without touching your data: `CLAUDE_SKILLS_PREVIEW="40,60,80,90,99" build/ClaudeSkills`.
 
+## Chests, streaks and the shop
+
+- **Chests**: one per 1,250 XP of combined work (4 on a normal day, at any level). A level-up upgrades your next chest; every 10th level of a skill gives a milestone chest; streaks of 7/30/100/200/365 days give golden or mythic chests. Each chest says why it came.
+- **Unboxing**: a reel spins and lands on one drop: Common, Rare, Ultra Rare or Extraordinary. Drops: XP potions and elixirs, Streak Shields, pets, auras, titles, coins, and real-life permissions (look out the window, a cookie, a pudding, an afternoon off). Permissions only come from chests.
+- **Coins**: 1 per 20 XP plus chest bonuses. They buy chests and big real-life rewards in the shop.
+- **Streak**: a day counts once your skills earn 500 XP together. One missed day a week is free; Streak Shields cover more.
+- Everything is deterministic: the same work always drops the same chests, and nothing can be spent twice. Earned chests live in `loot.json`, your clicks in `actions.jsonl`.
+
 ## Customize
 
 Edit `skills.json`: names, icons, the rules (tool-name regex, shell-command regex, prompt

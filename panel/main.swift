@@ -24,7 +24,7 @@ final class Panel: NSPanel {
 final class DragWebView: WKWebView {
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
-        if p.y < 22 * scale && p.x < bounds.width - 30 * scale { window?.performDrag(with: event) } else { super.mouseDown(with: event) }
+        if p.y < 22 * scale && p.x < 70 * scale { window?.performDrag(with: event) } else { super.mouseDown(with: event) }
     }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
@@ -49,6 +49,7 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         panel.setFrameAutosaveName("ClaudeSkillsPanel")
 
         let config = WKWebViewConfiguration()
+        config.mediaTypesRequiringUserActionForPlayback = []  // level-up and chest sounds
         config.userContentController.add(self, name: "panel")
         web = DragWebView(frame: NSRect(origin: .zero, size: frame.size), configuration: config)
         web.setValue(false, forKey: "drawsBackground")
@@ -74,6 +75,12 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         case "ready":
             push()      // show the last numbers at once,
             refresh()   // then catch up on new transcript lines
+        case "action":  // open a chest, use an item, equip, claim, buy: appended, then the tracker recounts
+            if var act = body["data"] as? [String: Any] {
+                act["t"] = Date().timeIntervalSince1970
+                appendLine(act, to: "actions.jsonl")
+                refresh(force: true)
+            }
         case "size":
             if let h = body["height"] as? Double { resize(CGFloat(h) * scale) }
         default: break
@@ -96,7 +103,21 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         panel.setFrameOrigin(NSPoint(x: s.maxX - f.width - 12, y: s.maxY - f.height - 12))
     }
 
-    func refresh() {
+    func appendLine(_ obj: [String: Any], to name: String) {
+        guard let data = try? JSONSerialization.data(withJSONObject: obj) else { return }
+        let url = dataDir.appendingPathComponent(name)
+        try? FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true)
+        if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil) }
+        guard let fh = try? FileHandle(forWritingTo: url) else { return }
+        defer { try? fh.close() }
+        _ = try? fh.seekToEnd()
+        try? fh.write(contentsOf: data + Data("\n".utf8))
+    }
+
+    var pending = false
+    var demoRan = false
+    func refresh(force: Bool = false) {
+        if force && running != nil { pending = true; return }  // run again as soon as this one ends
         if let p = running {
             if Date().timeIntervalSince(startedAt) < 300 { return }
             NSLog("ClaudeSkills: tracker hung for 5 min, killing it")
@@ -108,7 +129,11 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         p.arguments = [home.appendingPathComponent("tracker.py").path]
         p.terminationHandler = { proc in
             if proc.terminationStatus != 0 { NSLog("ClaudeSkills: tracker exited \(proc.terminationStatus)") }
-            DispatchQueue.main.async { if self.running === proc { self.running = nil }; self.push() }
+            DispatchQueue.main.async {
+                if self.running === proc { self.running = nil }
+                self.push()
+                if self.pending { self.pending = false; self.refresh() }
+            }
         }
         do { try p.run(); running = p; startedAt = Date() } catch { NSLog("ClaudeSkills: cannot start \(python): \(error)") }
     }
@@ -134,6 +159,10 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         web.evaluateJavaScript("window.render && window.render(\(json))")
         if let levels = env["CLAUDE_SKILLS_PREVIEW"] {  // e.g. "10,40,70,90,99" to see later gear; display only
             web.evaluateJavaScript("window.preview([\(levels)])")
+        }
+        if let js = env["CLAUDE_SKILLS_DEMO_JS"], !demoRan {  // dev only: script a click-through for screenshots
+            demoRan = true
+            web.evaluateJavaScript(js)
         }
         if let key = env["CLAUDE_SKILLS_HOVER"] {  // dev: show one hover state, e.g. "gear:afk"
             web.evaluateJavaScript("window.showInfo('\(key)')")

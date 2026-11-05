@@ -1,5 +1,5 @@
 {
-  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop). xp_since: only work after this moment earns XP (history before it is still used to learn your typical day). Delete it to count all history. tiers: the gear tier each skill level unlocks (a skill's level picks the tier of its gear piece; level 99 gives the item's legend name). titles: [total level, title].",
+  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop). xp_since: only work after this moment earns XP (history before it is still used to learn your typical day). Delete it to count all history. tiers: the gear tier each skill level unlocks (a skill's level picks the tier of its gear piece; level 99 gives the item's legend name). titles: [total level, title]. loot: chest drop rates, chest odds per rarity [common, rare, ultra, extraordinary] and the drop table (kinds: item, gold, pet, aura, title, voucher = a free real-life reward from the shop). rewards: your real-life shop; set names and gold prices to whatever you will actually treat yourself to.",
   "balance": {
     "xp_per_typical_day": 1000,
     "grind_soft_cap": 2,
@@ -226,5 +226,536 @@
       495,
       "Ascended"
     ]
+  ],
+  "streak": {
+    "min_day_xp": 500,
+    "_note": "a day keeps the streak alive once your skills together earn this much XP that day (half a normal day of one skill)"
+  },
+  "loot": {
+    "level_chest_every": 10,
+    "streak_milestones": [
+      7,
+      30,
+      100,
+      200,
+      365
+    ],
+    "tiers": [
+      {
+        "id": "wooden",
+        "name": "Wooden Chest",
+        "weight": 70,
+        "odds": [
+          72,
+          22,
+          5,
+          1
+        ],
+        "bonus_gold": [
+          5,
+          20
+        ],
+        "color": "#a0703c"
+      },
+      {
+        "id": "iron",
+        "name": "Iron Chest",
+        "weight": 22,
+        "odds": [
+          55,
+          32,
+          10,
+          3
+        ],
+        "bonus_gold": [
+          15,
+          40
+        ],
+        "color": "#9aa3ad"
+      },
+      {
+        "id": "gold",
+        "name": "Golden Chest",
+        "weight": 7,
+        "odds": [
+          35,
+          40,
+          19,
+          6
+        ],
+        "bonus_gold": [
+          40,
+          100
+        ],
+        "color": "#ffd84a"
+      },
+      {
+        "id": "mythic",
+        "name": "Mythic Chest",
+        "weight": 1,
+        "odds": [
+          0,
+          40,
+          45,
+          15
+        ],
+        "bonus_gold": [
+          150,
+          300
+        ],
+        "color": "#ff5fd2"
+      }
+    ],
+    "rarities": [
+      {
+        "id": "common",
+        "name": "Common",
+        "color": "#b8b8b8",
+        "duplicate_gold": 30
+      },
+      {
+        "id": "rare",
+        "name": "Rare",
+        "color": "#4f8dff",
+        "duplicate_gold": 120
+      },
+      {
+        "id": "ultra",
+        "name": "Ultra Rare",
+        "color": "#b05cff",
+        "duplicate_gold": 500
+      },
+      {
+        "id": "extraordinary",
+        "name": "Extraordinary",
+        "color": "#ffb020",
+        "duplicate_gold": 2000
+      }
+    ],
+    "boosts": {
+      "potion": {
+        "multiplier": 1.5,
+        "minutes": 60
+      },
+      "elixir": {
+        "multiplier": 2.0,
+        "minutes": 60
+      }
+    },
+    "drops": [
+      {
+        "id": "potion",
+        "name": "XP Potion",
+        "icon": "🧪",
+        "rarity": "common",
+        "kind": "item",
+        "weight": 30,
+        "about": "+50% XP on every skill for 60 minutes."
+      },
+      {
+        "id": "pouch",
+        "name": "Pouch of Gold",
+        "icon": "💰",
+        "rarity": "common",
+        "kind": "gold",
+        "weight": 40,
+        "gold": [
+          40,
+          90
+        ]
+      },
+      {
+        "id": "shield",
+        "name": "Streak Shield",
+        "icon": "🛡️",
+        "rarity": "common",
+        "kind": "item",
+        "weight": 20,
+        "about": "Saves your streak on a missed day, after your free weekly rest day. Used automatically."
+      },
+      {
+        "id": "v_window",
+        "name": "Permission: 1 minute looking out the window",
+        "icon": "🪟",
+        "rarity": "common",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "Stand up, look outside for a full minute. You earned it."
+      },
+      {
+        "id": "t_grinder",
+        "name": "Title: The Grinder",
+        "icon": "🏷️",
+        "rarity": "common",
+        "kind": "title",
+        "weight": 10
+      },
+      {
+        "id": "elixir",
+        "name": "Greater XP Elixir",
+        "icon": "⚗️",
+        "rarity": "rare",
+        "kind": "item",
+        "weight": 20,
+        "about": "Double XP on every skill for 60 minutes."
+      },
+      {
+        "id": "sack",
+        "name": "Sack of Gold",
+        "icon": "💰",
+        "rarity": "rare",
+        "kind": "gold",
+        "weight": 25,
+        "gold": [
+          200,
+          400
+        ]
+      },
+      {
+        "id": "owl",
+        "name": "Byte the Owl",
+        "icon": "🦉",
+        "rarity": "rare",
+        "kind": "pet",
+        "weight": 10
+      },
+      {
+        "id": "toad",
+        "name": "Commit Toad",
+        "icon": "🐸",
+        "rarity": "rare",
+        "kind": "pet",
+        "weight": 10
+      },
+      {
+        "id": "fox",
+        "name": "Merge Fox",
+        "icon": "🦊",
+        "rarity": "rare",
+        "kind": "pet",
+        "weight": 10
+      },
+      {
+        "id": "cat",
+        "name": "Lucky Cat",
+        "icon": "🐈‍⬛",
+        "rarity": "rare",
+        "kind": "pet",
+        "weight": 10
+      },
+      {
+        "id": "a_ember",
+        "name": "Ember Aura",
+        "icon": "🔥",
+        "rarity": "rare",
+        "kind": "aura",
+        "weight": 10,
+        "color": "#ff7a2f"
+      },
+      {
+        "id": "t_whisperer",
+        "name": "Title: Prompt Whisperer",
+        "icon": "🏷️",
+        "rarity": "rare",
+        "kind": "title",
+        "weight": 5
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch",
+        "icon": "👾",
+        "rarity": "ultra",
+        "kind": "pet",
+        "weight": 15
+      },
+      {
+        "id": "kraken",
+        "name": "Kraken of Threads",
+        "icon": "🐙",
+        "rarity": "ultra",
+        "kind": "pet",
+        "weight": 15
+      },
+      {
+        "id": "a_frost",
+        "name": "Frost Aura",
+        "icon": "❄️",
+        "rarity": "ultra",
+        "kind": "aura",
+        "weight": 15,
+        "color": "#7fd8ff"
+      },
+      {
+        "id": "v_coffee",
+        "name": "Voucher: Fancy coffee",
+        "icon": "☕",
+        "rarity": "ultra",
+        "kind": "voucher",
+        "weight": 20,
+        "reward": "coffee"
+      },
+      {
+        "id": "v_dinner",
+        "name": "Voucher: Dinner out",
+        "icon": "🍣",
+        "rarity": "ultra",
+        "kind": "voucher",
+        "weight": 10,
+        "reward": "dinner"
+      },
+      {
+        "id": "hoard",
+        "name": "Dragon's Hoard",
+        "icon": "💎",
+        "rarity": "ultra",
+        "kind": "gold",
+        "weight": 15,
+        "gold": [
+          1000,
+          2000
+        ]
+      },
+      {
+        "id": "t_mergelord",
+        "name": "Title: Merge Lord",
+        "icon": "🏷️",
+        "rarity": "ultra",
+        "kind": "title",
+        "weight": 10
+      },
+      {
+        "id": "phoenix",
+        "name": "Phoenix Chick",
+        "icon": "🐤",
+        "rarity": "extraordinary",
+        "kind": "pet",
+        "weight": 20
+      },
+      {
+        "id": "dragon",
+        "name": "Ember Whelp",
+        "icon": "🐉",
+        "rarity": "extraordinary",
+        "kind": "pet",
+        "weight": 20
+      },
+      {
+        "id": "a_void",
+        "name": "Void Aura",
+        "icon": "🌌",
+        "rarity": "extraordinary",
+        "kind": "aura",
+        "weight": 15,
+        "color": "#9b5cff"
+      },
+      {
+        "id": "v_dayoff",
+        "name": "Voucher: Full day off",
+        "icon": "🏝️",
+        "rarity": "extraordinary",
+        "kind": "voucher",
+        "weight": 15,
+        "reward": "dayoff"
+      },
+      {
+        "id": "v_gadget",
+        "name": "Voucher: Desk upgrade",
+        "icon": "🎧",
+        "rarity": "extraordinary",
+        "kind": "voucher",
+        "weight": 10,
+        "reward": "gadget"
+      },
+      {
+        "id": "t_unbound",
+        "name": "Title: The Unbound",
+        "icon": "🏷️",
+        "rarity": "extraordinary",
+        "kind": "title",
+        "weight": 10
+      },
+      {
+        "id": "ransom",
+        "name": "King's Ransom",
+        "icon": "👑",
+        "rarity": "extraordinary",
+        "kind": "gold",
+        "weight": 10,
+        "gold": [
+          5000,
+          5000
+        ]
+      },
+      {
+        "id": "v_page",
+        "name": "Permission: read one page of a book",
+        "icon": "📖",
+        "rarity": "common",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "One page. Savour it."
+      },
+      {
+        "id": "v_stretch",
+        "name": "Permission: 1 minute of stretching",
+        "icon": "🙆",
+        "rarity": "rare",
+        "kind": "voucher",
+        "weight": 12,
+        "about": "A full minute. Reach, twist, breathe."
+      },
+      {
+        "id": "v_song",
+        "name": "Permission: one song, eyes closed",
+        "icon": "🎵",
+        "rarity": "common",
+        "kind": "voucher",
+        "weight": 12,
+        "about": "Pick a song, close your eyes, do nothing else."
+      },
+      {
+        "id": "v_cold",
+        "name": "Permission: a cold drink",
+        "icon": "🧃",
+        "rarity": "common",
+        "kind": "voucher",
+        "weight": 10,
+        "about": "Something cold and nice. Not coffee."
+      },
+      {
+        "id": "v_cookie",
+        "name": "Permission: eat a cookie",
+        "icon": "🍪",
+        "rarity": "rare",
+        "kind": "voucher",
+        "weight": 20,
+        "about": "One cookie. A good one."
+      },
+      {
+        "id": "v_walk",
+        "name": "Permission: a 10-minute walk outside",
+        "icon": "🚶",
+        "rarity": "rare",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "Phone stays at the desk."
+      },
+      {
+        "id": "v_friend",
+        "name": "Permission: call or text a friend",
+        "icon": "📞",
+        "rarity": "rare",
+        "kind": "voucher",
+        "weight": 10,
+        "about": "Someone you have not talked to in a while."
+      },
+      {
+        "id": "v_game",
+        "name": "Permission: one round of a game",
+        "icon": "🕹️",
+        "rarity": "rare",
+        "kind": "voucher",
+        "weight": 10,
+        "about": "One round. Then back."
+      },
+      {
+        "id": "v_dessert",
+        "name": "Permission: a proper dessert",
+        "icon": "🍰",
+        "rarity": "ultra",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "Not a cookie. A dessert."
+      },
+      {
+        "id": "v_read30",
+        "name": "Permission: 30 minutes of reading",
+        "icon": "📚",
+        "rarity": "ultra",
+        "kind": "voucher",
+        "weight": 12,
+        "about": "A real book, a real half hour."
+      },
+      {
+        "id": "v_afternoon",
+        "name": "Permission: an afternoon off",
+        "icon": "🌅",
+        "rarity": "extraordinary",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "Laptop closed after lunch."
+      },
+      {
+        "id": "v_pudding",
+        "name": "Permission: a pudding",
+        "icon": "🍮",
+        "rarity": "ultra",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "A whole pudding. Yours."
+      },
+      {
+        "id": "v_cola",
+        "name": "Permission: an ice-cold Coca-Cola",
+        "icon": "🥤",
+        "rarity": "ultra",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "Glass bottle if you can find one."
+      }
+    ],
+    "coins_per_xp": 0.05,
+    "_balance_note": "One chest per 1,250 XP of combined work: 4 on a normal day (1,000 XP in each of 5 skills), at any level. A level-up upgrades the next chest one tier. Every 10th level of a skill also gives a milestone chest. Coins: 1 per 20 XP passively plus chest bonuses, about 300 on a normal day. They buy chests (a Wooden one is half a day) and big real-life rewards. Permissions only come from chests.",
+    "xp_per_chest": 1250,
+    "chest_prices": {
+      "wooden": 150,
+      "iron": 400,
+      "gold": 1200,
+      "mythic": 5000
+    }
+  },
+  "rewards": [
+    {
+      "id": "coffee",
+      "name": "Fancy coffee",
+      "icon": "☕",
+      "cost": 600
+    },
+    {
+      "id": "dinner",
+      "name": "Dinner out, guilt-free",
+      "icon": "🍣",
+      "cost": 1500
+    },
+    {
+      "id": "book",
+      "name": "A book or game you want",
+      "icon": "🎮",
+      "cost": 3000
+    },
+    {
+      "id": "sauna",
+      "name": "Sauna or spa afternoon",
+      "icon": "🧖",
+      "cost": 4500
+    },
+    {
+      "id": "dayoff",
+      "name": "A full day off, no laptop",
+      "icon": "🏝️",
+      "cost": 6000
+    },
+    {
+      "id": "gadget",
+      "name": "Desk upgrade (keyboard, headphones)",
+      "icon": "🎧",
+      "cost": 20000
+    },
+    {
+      "id": "trip",
+      "name": "Weekend trip",
+      "icon": "✈️",
+      "cost": 50000
+    }
   ]
 }

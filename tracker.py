@@ -30,6 +30,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import loot  # noqa: E402
 DEFAULT_DATA = Path.home() / "Library" / "Application Support" / "ClaudeSkills"
 
 REMINDER = re.compile(r"<system-reminder>.*?</system-reminder>", re.S)
@@ -50,7 +52,9 @@ class Paths:
         self.projects = Path(projects or env("CLAUDE_PROJECTS_DIR") or Path.home() / ".claude" / "projects")
         self.data = Path(data or env("CLAUDE_SKILLS_DATA") or DEFAULT_DATA)
         self.state = self.data / "state.json"
-        self.github = self.data / "github_prs.json"  # merged PRs; survives rescans
+        self.github = self.data / "github_prs.json"
+        self.loot = self.data / "loot.json"        # chests earned; only grows, survives rescans
+        self.actions = self.data / "actions.jsonl"  # what you did in the panel: open, use, equip, redeem  # merged PRs; survives rescans
         self.activity = self.data / "activity.jsonl"  # written by the panel: front app samples
         self.wispr = Path(env("CLAUDE_SKILLS_WISPR_DB")
                           or Path.home() / "Library" / "Application Support" / "Wispr Flow" / "flow.sqlite")
@@ -140,6 +144,7 @@ class Counter:
         since = cfg.get("xp_since")
         self.since = datetime.fromisoformat(since).timestamp() if since else None
         self.ts = 0.0  # timestamp of the event being counted
+        self.boosts = []  # [start, end, multiplier] of XP potions and elixirs you used
 
 
     def first_time(self, key):
@@ -154,6 +159,7 @@ class Counter:
     def add(self, day, skill, amount):
         if self.since is not None and self.ts < self.since:
             day = "pre:" + day  # learns your typical day, earns no XP
+        amount *= max([m for a, b, m in self.boosts if a <= self.ts < b], default=1)
         if amount > 0:
             bucket = self.days.setdefault(day, {})
             bucket[skill] = round(bucket.get(skill, 0) + amount, 4)
@@ -432,6 +438,8 @@ def run(paths):
     st = load_state(paths, cfg)
     counter = Counter(cfg, st)
     paths.data.mkdir(parents=True, exist_ok=True)
+    ledger, actions = loot.load(paths.loot), loot.load_actions(paths.actions)
+    counter.boosts = loot.inventory(cfg, ledger, actions, time.time())["boosts"]
     present = set()
     for path in sorted(paths.projects.rglob("*.jsonl")):
         present.add(str(path))
@@ -453,8 +461,43 @@ def run(paths):
     calibrate(cfg, st)
     save_json(paths.state, {**st, "seen": sorted(st["seen"])})
     stats = build_stats(cfg, st)
+    stats["loot"], stats["streak"] = settle_loot(cfg, st, ledger, actions, stats)
+    save_json(paths.loot, ledger)
     save_json(paths.stats, stats)
     return stats
+
+
+def daily_totals(cfg, st):
+    """XP per calendar day across all skills, history included (streaks count real days worked)."""
+    merged = {}
+    for key, bucket in st["days"].items():
+        day = merged.setdefault(key.removeprefix("pre:"), {})
+        for k, v in bucket.items():
+            day[k] = day.get(k, 0) + v
+    return {day: sum(day_xp(b.get(s["id"], 0), st["calib"][s["id"]]["typical"], cfg["balance"]) for s in cfg["skills"])
+            for day, b in merged.items()}
+
+
+def settle_loot(cfg, st, ledger, actions, stats, now=None):
+    now = now or time.time()
+    today = datetime.now().astimezone().strftime("%Y-%m-%d")
+    totals = daily_totals(cfg, st)
+    need = cfg.get("streak", {}).get("min_day_xp", 500)
+    active = {d for d, x in totals.items() if x >= need}
+    held = loot.inventory(cfg, ledger, actions, now)["items"].get(loot.SHIELD, 0)  # shields come from chests, not coins
+    if totals:
+        loot.settle_streak(ledger, active, min(totals), today, held)
+    streak_now = loot.streak(ledger, active, today)
+    streak_now["today_xp"], streak_now["need"] = int(totals.get(today, 0)), need
+    loot.earn(cfg, ledger, stats["skills"], streak_now, now)
+    coins = stats["total_xp"] * cfg["loot"].get("coins_per_xp", 0)
+    inv = loot.inventory(cfg, ledger, actions, now, earned_coins=coins)
+    inv["chest_contents"] = {c["id"]: loot.contents(cfg, c["id"], c["tier"]) for c in inv["unopened"]}
+    inv["config"] = {k: cfg["loot"][k] for k in ("tiers", "rarities", "drops")}
+    inv["shop"] = loot.shop(cfg)
+    inv["meter"] = ledger.get("meter", {"have": 0, "need": cfg["loot"]["xp_per_chest"], "upgrade": False})
+    inv["earned_coins"] = int(coins)
+    return inv, streak_now
 
 
 def main():
