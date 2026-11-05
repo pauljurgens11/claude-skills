@@ -11,6 +11,7 @@ let python = env["CLAUDE_SKILLS_PYTHON"] ?? "/usr/bin/python3"
 let dataDir = URL(fileURLWithPath: env["CLAUDE_SKILLS_DATA"]
     ?? NSHomeDirectory() + "/Library/Application Support/ClaudeSkills")
 let sampleSeconds: Double = 15
+let idleLimit = Double(env["CLAUDE_SKILLS_IDLE_LIMIT"] ?? "60") ?? 60
 let refreshSeconds = Double(env["CLAUDE_SKILLS_REFRESH"] ?? "60") ?? 60
 let scale = CGFloat(Double(env["CLAUDE_SKILLS_SCALE"] ?? "1.5") ?? 1.5)
 let width: CGFloat = 230 * scale
@@ -116,7 +117,7 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     func sampleFrontApp() {
         let anyInput = CGEventType(rawValue: ~0)!
         let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyInput)
-        guard idle < 60, let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
+        guard idle < idleLimit, let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
         let line = "{\"t\":\(Int(Date().timeIntervalSince1970)),\"app\":\"\(app)\",\"s\":\(Int(sampleSeconds))}\n"
         let url = dataDir.appendingPathComponent("activity.jsonl")
         try? FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true)
