@@ -16,6 +16,7 @@ fi
 
 command -v swiftc >/dev/null || { echo "Needs Xcode command line tools: xcode-select --install"; exit 1; }
 PYTHON="$(command -v python3)"
+GH="$(command -v gh || true)"   # Shipping reads merged PRs through the GitHub CLI; without it Shipping stays at 1
 mkdir -p "$HOME_DIR/build" "$HOME/Library/LaunchAgents"
 swiftc -O "$HOME_DIR/panel/main.swift" -o "$HOME_DIR/build/ClaudeSkills"
 
@@ -33,6 +34,7 @@ cat > "$PLIST" <<EOF
   <dict>
     <key>CLAUDE_SKILLS_HOME</key><string>$HOME_DIR</string>
     <key>CLAUDE_SKILLS_PYTHON</key><string>$PYTHON</string>
+    <key>CLAUDE_SKILLS_GH</key><string>$GH</string>
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>

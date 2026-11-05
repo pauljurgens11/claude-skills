@@ -1,5 +1,6 @@
 """Each test guards a bug that would silently skew the levels. Run: python3 -m unittest discover tests"""
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -9,6 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import tracker  # noqa: E402
+
+os.environ["CLAUDE_SKILLS_GH"] = "/nonexistent/gh"  # tests never call the real GitHub
 
 TS = "2026-11-05T10:00:{:02d}.000Z"
 
@@ -101,8 +104,8 @@ class TrackerTest(unittest.TestCase):
     def test_tools_land_in_the_right_skill_and_the_rest_earn_nothing(self):
         self.rig.write("p/s1.jsonl", SESSION)
         raw = self.rig.raw()
-        self.assertEqual(raw["shipping"], 1)  # the git commit
-        self.assertEqual(set(raw), {"prompting", "afk", "shipping"})  # pytest, ls, Read, Workflow earn nothing
+        # a local `git commit` (or a script that merely mentions it) is not shipping
+        self.assertEqual(set(raw), {"prompting", "afk"})
 
     def test_forked_session_copy_counts_once(self):
         self.rig.write("p/s1.jsonl", SESSION)
@@ -190,6 +193,28 @@ class TrackerTest(unittest.TestCase):
             for i, (app, sec) in enumerate(samples):
                 fh.write(json.dumps({"t": t + 15 * i, "app": app, "s": sec}) + "\n")
         self.assertAlmostEqual(self.rig.raw()["messaging"], 1.5)  # 6 samples x 15s
+
+    def test_shipping_counts_each_merged_pr_once_across_rereads(self):
+        cfg = tracker.load_config(self.rig.paths.config)
+        st = {"days": {}, "seen": set()}
+        counter = tracker.Counter(cfg, st)
+        merged = [("https://github.com/o/r/pull/1", "2026-11-05T10:00:00Z"),
+                  ("https://github.com/o/r/pull/2", "2026-11-05T11:00:00Z")]
+        clock = [1_000_000.0]
+        run = lambda: tracker.scan_github(st, counter, "2026-11-01", now=lambda: clock[0], fetch=lambda gh, a, since: merged)
+        os.environ["CLAUDE_SKILLS_GH"] = "/usr/bin/true"
+        try:
+            run()
+            self.assertEqual(st["days"]["2026-11-05"]["shipping"], 2)
+            clock[0] += 60
+            merged.append(("https://github.com/o/r/pull/3", "2026-11-05T12:00:00Z"))
+            run()  # within 10 minutes: GitHub is not asked again
+            self.assertEqual(st["days"]["2026-11-05"]["shipping"], 2)
+            clock[0] += 600
+            run()  # re-read returns 1 and 2 again plus the new 3
+            self.assertEqual(st["days"]["2026-11-05"]["shipping"], 3)
+        finally:
+            os.environ["CLAUDE_SKILLS_GH"] = "/nonexistent/gh"
 
     def test_a_year_of_maxed_out_days_reaches_the_low_90s_not_99(self):
         cfg = json.loads((ROOT / "skills.json").read_text())

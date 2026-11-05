@@ -96,10 +96,12 @@
       "id": "shipping",
       "name": "Shipping",
       "icon": "🚀",
-      "about": "Commits, pushes and pull requests your agents make.",
+      "about": "Pull requests you (or your agents, on your GitHub account) got merged. Read from GitHub.",
       "rules": [
         {
-          "bash": "\\b(git (commit|push)|gh pr (create|merge))\\b"
+          "github_merged_prs": true,
+          "author": "@me",
+          "check_every_minutes": 10
         }
       ],
       "gear": {

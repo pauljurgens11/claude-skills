@@ -21,7 +21,10 @@ import json
 import math
 import os
 import re
+import shutil
 import sqlite3
+import subprocess
+import time
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -274,6 +277,43 @@ def scan_wispr(db, st, counter):
         st["wispr_since"] = (last.astimezone(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def find_gh():
+    extra = "/opt/homebrew/bin:/usr/local/bin:/usr/bin"
+    return os.environ.get("CLAUDE_SKILLS_GH") or shutil.which("gh", path=os.environ.get("PATH", "") + ":" + extra)
+
+
+def gh_merged(gh, author, since_day):
+    """[(url, merged_at)] for PRs by `author` merged on or after since_day, in weekly windows (search caps at 1000)."""
+    out, start = [], datetime.fromisoformat(since_day).date()
+    today = datetime.now().date()
+    while start <= today:
+        end = start + timedelta(days=6)
+        res = subprocess.run(
+            [gh, "search", "prs", "--author", author, "--merged", "--merged-at", f"{start}..{end}",
+             "--limit", "1000", "--json", "url,closedAt"],
+            capture_output=True, text=True, timeout=60, check=True)
+        out += [(pr["url"], pr["closedAt"]) for pr in json.loads(res.stdout or "[]")]
+        start = end + timedelta(days=1)
+    return out
+
+
+def scan_github(st, counter, first_day, now=time.time, fetch=gh_merged):
+    """Merged pull requests per day. A local commit or a push is not shipped; a merge is."""
+    for sid, r in counter.matching("github_merged_prs"):
+        gh = find_gh()
+        last = st.get("github_checked", 0)
+        if not gh or now() - last < r.get("check_every_minutes", 10) * 60:
+            return
+        since = st.get("github_since", first_day)
+        for url, merged_at in fetch(gh, r.get("author", "@me"), since):
+            t = datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
+            counter.ts = t.timestamp()
+            if counter.first_time("pr:" + url):
+                counter.add(t.astimezone().strftime("%Y-%m-%d"), sid, r.get("weight", 1))
+        st["github_checked"] = now()
+        st["github_since"] = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")  # re-read 2 days: search lags
+
+
 def scan_activity(path, st, counter):
     """Front-app samples the panel appends: {"t": epoch, "app": bundle id, "s": seconds}."""
     if not path.exists():
@@ -393,6 +433,11 @@ def run(paths):
     except sqlite3.Error:
         pass  # Wispr Flow busy or changed its schema; try again next run
     scan_activity(paths.activity, st, counter)
+    days = sorted(k.removeprefix("pre:") for k in st["days"])
+    try:
+        scan_github(st, counter, days[0] if days else datetime.now().strftime("%Y-%m-%d"))
+    except (OSError, subprocess.SubprocessError, ValueError):
+        pass  # offline or gh not signed in; try again next run
     calibrate(cfg, st)
     paths.data.mkdir(parents=True, exist_ok=True)
     save_json(paths.state, {**st, "seen": sorted(st["seen"])})
