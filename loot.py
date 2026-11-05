@@ -140,6 +140,8 @@ def inventory(cfg, ledger, actions, now, earned_coins=0):
         elif kind == "claim" and inv["vouchers"].get(a.get("voucher"), 0) > 0:
             inv["vouchers"][a["voucher"]] -= 1
             inv["redeemed"].append({"name": drops[a["voucher"]]["name"], "t": t, "free": True})
+        elif kind == "adjust" and isinstance(a.get("coins"), (int, float)):  # a manual correction
+            inv["gold"] = max(0, inv["gold"] + int(a["coins"]))
         elif kind == "redeem" and a.get("reward") in rewards and inv["gold"] >= rewards[a["reward"]]["cost"]:
             r = rewards[a["reward"]]
             inv["gold"] -= r["cost"]
