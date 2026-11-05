@@ -549,15 +549,6 @@
         "color": "#9b5cff"
       },
       {
-        "id": "v_dayoff",
-        "name": "Voucher: Full day off",
-        "icon": "🏝️",
-        "rarity": "extraordinary",
-        "kind": "voucher",
-        "weight": 15,
-        "reward": "dayoff"
-      },
-      {
         "id": "v_gadget",
         "name": "Voucher: Desk upgrade",
         "icon": "🎧",
@@ -632,15 +623,6 @@
         "about": "One cookie. A good one."
       },
       {
-        "id": "v_walk",
-        "name": "Permission: a 10-minute walk outside",
-        "icon": "🚶",
-        "rarity": "rare",
-        "kind": "voucher",
-        "weight": 15,
-        "about": "Phone stays at the desk."
-      },
-      {
         "id": "v_friend",
         "name": "Permission: call or text a friend",
         "icon": "📞",
@@ -648,15 +630,6 @@
         "kind": "voucher",
         "weight": 10,
         "about": "Someone you have not talked to in a while."
-      },
-      {
-        "id": "v_game",
-        "name": "Permission: one round of a game",
-        "icon": "🕹️",
-        "rarity": "rare",
-        "kind": "voucher",
-        "weight": 10,
-        "about": "One round. Then back."
       },
       {
         "id": "v_dessert",
@@ -669,12 +642,12 @@
       },
       {
         "id": "v_read30",
-        "name": "Permission: 30 minutes of reading",
+        "name": "Permission: 5 minutes of reading",
         "icon": "📚",
         "rarity": "ultra",
         "kind": "voucher",
         "weight": 12,
-        "about": "A real book, a real half hour."
+        "about": "A real book, five real minutes."
       },
       {
         "id": "v_afternoon",
@@ -738,12 +711,6 @@
       "name": "Sauna or spa afternoon",
       "icon": "🧖",
       "cost": 4500
-    },
-    {
-      "id": "dayoff",
-      "name": "A full day off, no laptop",
-      "icon": "🏝️",
-      "cost": 6000
     },
     {
       "id": "gadget",
