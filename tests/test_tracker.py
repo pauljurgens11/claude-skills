@@ -2,6 +2,7 @@
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -213,6 +214,25 @@ class TrackerTest(unittest.TestCase):
             clock[0] += 600
             run()  # re-read returns 1 and 2 again plus the new 3
             self.assertEqual(st["days"]["2026-11-05"]["shipping"], 3)
+        finally:
+            os.environ["CLAUDE_SKILLS_GH"] = "/nonexistent/gh"
+
+    def test_rate_limited_github_is_not_hammered(self):
+        cfg = tracker.load_config(self.rig.paths.config)
+        st, calls, clock = {"days": {}, "seen": set()}, [], [1_000_000.0]
+        def refuse(gh, author, since):
+            calls.append(since)
+            raise subprocess.CalledProcessError(1, "gh", "HTTP 403: secondary rate limit")
+        counter = tracker.Counter(cfg, st)
+        os.environ["CLAUDE_SKILLS_GH"] = "/usr/bin/true"
+        try:
+            for _ in range(5):  # five panel refreshes, a minute apart
+                try:
+                    tracker.scan_github(st, counter, "2026-11-01", now=lambda: clock[0], fetch=refuse)
+                except subprocess.CalledProcessError:
+                    pass
+                clock[0] += 60
+            self.assertEqual(len(calls), 1)
         finally:
             os.environ["CLAUDE_SKILLS_GH"] = "/nonexistent/gh"
 

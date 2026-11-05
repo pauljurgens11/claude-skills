@@ -305,12 +305,12 @@ def scan_github(st, counter, first_day, now=time.time, fetch=gh_merged):
         if not gh or now() - last < r.get("check_every_minutes", 10) * 60:
             return
         since = st.get("github_since", first_day)
+        st["github_checked"] = now()  # also on failure: a rate-limited GitHub is asked again in 10 min, not every minute
         for url, merged_at in fetch(gh, r.get("author", "@me"), since):
             t = datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
             counter.ts = t.timestamp()
             if counter.first_time("pr:" + url):
                 counter.add(t.astimezone().strftime("%Y-%m-%d"), sid, r.get("weight", 1))
-        st["github_checked"] = now()
         st["github_since"] = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")  # re-read 2 days: search lags
 
 
