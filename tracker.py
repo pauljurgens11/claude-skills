@@ -481,7 +481,8 @@ def daily_totals(cfg, st, since_start=False):
 def settle_loot(cfg, st, ledger, actions, stats, now=None):
     now = now or time.time()
     today = datetime.now().astimezone().strftime("%Y-%m-%d")
-    totals = daily_totals(cfg, st, since_start=True)
+    loot_day = cfg.get("loot_since", cfg.get("xp_since", "0000"))[:10]
+    totals = {d: x for d, x in daily_totals(cfg, st, since_start=True).items() if d >= loot_day}
     need = cfg.get("streak", {}).get("min_day_xp", 500)
     active = {d for d, x in totals.items() if x >= need}
     held = loot.inventory(cfg, ledger, actions, now)["items"].get(loot.SHIELD, 0)  # shields come from chests, not coins
@@ -490,7 +491,9 @@ def settle_loot(cfg, st, ledger, actions, stats, now=None):
     streak_now = loot.streak(ledger, active, today)
     streak_now["today_xp"], streak_now["need"] = int(totals.get(today, 0)), need
     loot.earn(cfg, ledger, stats["skills"], streak_now, now)
-    coins = stats["total_xp"] * cfg["loot"].get("coins_per_xp", 0)
+    # coins count XP earned after loot_since: the first run after it records where XP stood
+    base = ledger.setdefault("coins_base_xp", stats["total_xp"])
+    coins = max(0, stats["total_xp"] - base) * cfg["loot"].get("coins_per_xp", 0)
     inv = loot.inventory(cfg, ledger, actions, now, earned_coins=coins)
     inv["chest_contents"] = {c["id"]: loot.contents(cfg, c["id"], c["tier"]) for c in inv["unopened"]}
     inv["config"] = {k: cfg["loot"][k] for k in ("tiers", "rarities", "drops")}
@@ -500,6 +503,15 @@ def settle_loot(cfg, st, ledger, actions, stats, now=None):
     return inv, streak_now
 
 
+def gift(paths, tier, reason):
+    """Put a chest in the tray by hand: python3 tracker.py --gift gold "why" """
+    ledger = loot.load(paths.loot)
+    cid = f"gift-{int(time.time() * 1000)}"
+    ledger.setdefault("chests", {})[cid] = {"tier": tier, "source": reason, "t": time.time()}
+    save_json(paths.loot, ledger)
+    return cid
+
+
 def main():
     paths = Paths()
     paths.data.mkdir(parents=True, exist_ok=True)
@@ -507,7 +519,15 @@ def main():
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
-        return  # another run is already updating the numbers
+        if "--gift" in sys.argv:  # wait for the panel's run instead of dropping the gift
+            fcntl.flock(lock, fcntl.LOCK_EX)
+        else:
+            return  # another run is already updating the numbers
+    if "--gift" in sys.argv:
+        i = sys.argv.index("--gift")
+        tier = sys.argv[i + 1] if len(sys.argv) > i + 1 else "gold"
+        reason = sys.argv[i + 2] if len(sys.argv) > i + 2 else "A gift"
+        print("gifted", gift(paths, tier, reason))
     stats = run(paths)
     if "--print" in sys.argv:
         for s in stats["skills"]:

@@ -1,5 +1,5 @@
 {
-  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop). xp_since: only work after this moment earns XP (history before it is still used to learn your typical day). Delete it to count all history. loot: chest drop rates, chest odds per rarity [common, rare, ultra, extraordinary] and the drop table (kinds: item, gold, pet, aura, title, voucher = a free real-life reward from the shop). rewards: your real-life shop; set names and gold prices to whatever you will actually treat yourself to. A drop with a price is also sold in the shop.",
+  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop). xp_since: only work after this moment earns XP (history before it is still used to learn your typical day). Delete it to count all history. loot: chest drop rates, chest odds per rarity [common, rare, ultra, extraordinary] and the drop table (kinds: item, gold, pet, aura, title, voucher = a free real-life reward from the shop). rewards: your real-life shop; set names and gold prices to whatever you will actually treat yourself to. A drop with a price is also sold in the shop. loot_since: coins and the streak count from this moment.",
   "balance": {
     "xp_per_typical_day": 1000,
     "grind_soft_cap": 2,
@@ -86,7 +86,7 @@
       ]
     }
   ],
-  "xp_since": "2026-11-05T22:50:31+02:00",
+  "xp_since": "2026-11-05T21:56:46+02:00",
   "streak": {
     "min_day_xp": 500,
     "_note": "a day keeps the streak alive once your skills together earn this much XP that day (half a normal day of one skill)"
@@ -605,5 +605,6 @@
       "icon": "✈️",
       "cost": 50000
     }
-  ]
+  ],
+  "loot_since": "2026-11-05T22:50:31+02:00"
 }
