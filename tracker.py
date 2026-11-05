@@ -50,6 +50,7 @@ class Paths:
         self.projects = Path(projects or env("CLAUDE_PROJECTS_DIR") or Path.home() / ".claude" / "projects")
         self.data = Path(data or env("CLAUDE_SKILLS_DATA") or DEFAULT_DATA)
         self.state = self.data / "state.json"
+        self.github = self.data / "github_prs.json"  # merged PRs; survives rescans
         self.activity = self.data / "activity.jsonl"  # written by the panel: front app samples
         self.wispr = Path(env("CLAUDE_SKILLS_WISPR_DB")
                           or Path.home() / "Library" / "Application Support" / "Wispr Flow" / "flow.sqlite")
@@ -297,21 +298,31 @@ def gh_merged(gh, author, since_day):
     return out
 
 
-def scan_github(st, counter, first_day, now=time.time, fetch=gh_merged):
-    """Merged pull requests per day. A local commit or a push is not shipped; a merge is."""
+def scan_github(st, counter, first_day, cache_path, now=time.time, fetch=gh_merged):
+    """Merged pull requests per day. A local commit or a push is not shipped; a merge is.
+
+    Merges live in their own cache file, so a rescan (rules changed) replays them instead of
+    spending GitHub's search quota, which your other sessions share. GitHub is asked only for
+    the last two days, at most every check_every_minutes, also after a refusal."""
     for sid, r in counter.matching("github_merged_prs"):
+        try:
+            cache = json.loads(cache_path.read_text())
+        except (OSError, ValueError):
+            cache = {"checked": 0, "since": first_day, "prs": {}}
         gh = find_gh()
-        last = st.get("github_checked", 0)
-        if not gh or now() - last < r.get("check_every_minutes", 10) * 60:
-            return
-        since = st.get("github_since", first_day)
-        st["github_checked"] = now()  # also on failure: a rate-limited GitHub is asked again in 10 min, not every minute
-        for url, merged_at in fetch(gh, r.get("author", "@me"), since):
+        if gh and now() - cache["checked"] >= r.get("check_every_minutes", 10) * 60:
+            cache["checked"] = now()
+            try:
+                for url, merged_at in fetch(gh, r.get("author", "@me"), cache["since"]):
+                    cache["prs"][url] = merged_at
+                cache["since"] = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")  # search lags
+            finally:
+                save_json(cache_path, cache)
+        for url, merged_at in cache["prs"].items():
             t = datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
             counter.ts = t.timestamp()
             if counter.first_time("pr:" + url):
                 counter.add(t.astimezone().strftime("%Y-%m-%d"), sid, r.get("weight", 1))
-        st["github_since"] = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")  # re-read 2 days: search lags
 
 
 def scan_activity(path, st, counter):
@@ -420,6 +431,7 @@ def run(paths):
     cfg = load_config(paths.config)
     st = load_state(paths, cfg)
     counter = Counter(cfg, st)
+    paths.data.mkdir(parents=True, exist_ok=True)
     present = set()
     for path in sorted(paths.projects.rglob("*.jsonl")):
         present.add(str(path))
@@ -435,11 +447,10 @@ def run(paths):
     scan_activity(paths.activity, st, counter)
     days = sorted(k.removeprefix("pre:") for k in st["days"])
     try:
-        scan_github(st, counter, days[0] if days else datetime.now().strftime("%Y-%m-%d"))
+        scan_github(st, counter, days[0] if days else datetime.now().strftime("%Y-%m-%d"), paths.github)
     except (OSError, subprocess.SubprocessError, ValueError):
         pass  # offline or gh not signed in; try again next run
     calibrate(cfg, st)
-    paths.data.mkdir(parents=True, exist_ok=True)
     save_json(paths.state, {**st, "seen": sorted(st["seen"])})
     stats = build_stats(cfg, st)
     save_json(paths.stats, stats)

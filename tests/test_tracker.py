@@ -202,7 +202,8 @@ class TrackerTest(unittest.TestCase):
         merged = [("https://github.com/o/r/pull/1", "2026-11-05T10:00:00Z"),
                   ("https://github.com/o/r/pull/2", "2026-11-05T11:00:00Z")]
         clock = [1_000_000.0]
-        run = lambda: tracker.scan_github(st, counter, "2026-11-01", now=lambda: clock[0], fetch=lambda gh, a, since: merged)
+        cache = self.rig.dir / "github_prs.json"
+        run = lambda: tracker.scan_github(st, counter, "2026-11-01", cache, now=lambda: clock[0], fetch=lambda gh, a, since: merged)
         os.environ["CLAUDE_SKILLS_GH"] = "/usr/bin/true"
         try:
             run()
@@ -214,6 +215,11 @@ class TrackerTest(unittest.TestCase):
             clock[0] += 600
             run()  # re-read returns 1 and 2 again plus the new 3
             self.assertEqual(st["days"]["2026-11-05"]["shipping"], 3)
+            # rules changed -> full rescan with fresh state: merges replay from the cache, GitHub is not asked
+            fresh = {"days": {}, "seen": set()}
+            tracker.scan_github(fresh, tracker.Counter(cfg, fresh), "2026-11-01", cache, now=lambda: clock[0],
+                                fetch=lambda *a: self.fail("asked GitHub again"))
+            self.assertEqual(fresh["days"]["2026-11-05"]["shipping"], 3)
         finally:
             os.environ["CLAUDE_SKILLS_GH"] = "/nonexistent/gh"
 
@@ -228,7 +234,7 @@ class TrackerTest(unittest.TestCase):
         try:
             for _ in range(5):  # five panel refreshes, a minute apart
                 try:
-                    tracker.scan_github(st, counter, "2026-11-01", now=lambda: clock[0], fetch=refuse)
+                    tracker.scan_github(st, counter, "2026-11-01", self.rig.dir / "gh.json", now=lambda: clock[0], fetch=refuse)
                 except subprocess.CalledProcessError:
                     pass
                 clock[0] += 60
