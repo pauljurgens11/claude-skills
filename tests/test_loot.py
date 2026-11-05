@@ -64,7 +64,8 @@ class LootTest(unittest.TestCase):
         self.assertGreaterEqual(inv["gold"], 0)
 
     def test_coins_buy_chests_not_permissions_and_never_go_negative(self):
-        self.assertFalse([r for r in loot.shop(CFG) if r["id"].startswith("v_")])  # permissions only from chests
+        sold = {r["id"] for r in loot.shop(CFG) if r["id"].startswith("v_")}
+        self.assertEqual(sold, {d["id"] for d in CFG["loot"]["drops"] if "price" in d})  # only treats you priced
         wooden = next(r for r in loot.shop(CFG) if r.get("tier") == "wooden")
         acts = [{"action": "redeem", "reward": wooden["id"], "t": 10 + i} for i in range(5)]
         inv = loot.inventory(CFG, {}, acts, now=0, earned_coins=wooden["cost"] * 2 + 1)
@@ -93,9 +94,9 @@ class LootTest(unittest.TestCase):
         inv = loot.inventory(CFG, ledger, [{"action": "equip", "slot": "pet", "id": pet["id"]}], now=0)
         self.assertIsNone(inv["equipped"]["pet"])  # not opened yet
         inv = loot.inventory(CFG, ledger, [{"action": "open", "chest": cid},
-                                           {"action": "equip", "slot": "aura", "id": pet["id"]},
+                                           {"action": "equip", "slot": "title", "id": pet["id"]},
                                            {"action": "equip", "slot": "pet", "id": pet["id"]}], now=0)
-        self.assertEqual(inv["equipped"], {"pet": pet["id"], "aura": None, "title": None})
+        self.assertEqual(inv["equipped"], {"pet": pet["id"], "title": None})
 
 
 class StreakTest(unittest.TestCase):

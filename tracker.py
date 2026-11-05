@@ -416,7 +416,7 @@ def build_stats(cfg, st):
         lv = level_for(xp, table)
         out.append({
             "id": sid, "name": s["name"], "icon": s["icon"], "group": s.get("group", ""),
-            "about": s.get("about", ""), "gear": s.get("gear"), "xp": int(xp), "level": lv, "level_xp": table[lv],
+            "about": s.get("about", ""), "xp": int(xp), "level": lv, "level_xp": table[lv],
             "next_xp": table[lv + 1] if lv + 1 < len(table) else None,
             "today_xp": int(today_xp), "today_raw": round(st["days"].get(today, {}).get(sid, 0), 1),
             "typical_day": round(typical, 2),
@@ -427,8 +427,6 @@ def build_stats(cfg, st):
         "total_level": sum(s["level"] for s in out),
         "total_xp": sum(s["xp"] for s in out),
         "curve": table,
-        "tiers": cfg.get("tiers", []),
-        "titles": cfg.get("titles", []),
         "skills": out,
     }
 
@@ -467,10 +465,12 @@ def run(paths):
     return stats
 
 
-def daily_totals(cfg, st):
-    """XP per calendar day across all skills, history included (streaks count real days worked)."""
+def daily_totals(cfg, st, since_start=False):
+    """XP per calendar day across all skills; since_start skips work from before xp_since."""
     merged = {}
     for key, bucket in st["days"].items():
+        if since_start and key.startswith("pre:"):
+            continue
         day = merged.setdefault(key.removeprefix("pre:"), {})
         for k, v in bucket.items():
             day[k] = day.get(k, 0) + v
@@ -481,7 +481,7 @@ def daily_totals(cfg, st):
 def settle_loot(cfg, st, ledger, actions, stats, now=None):
     now = now or time.time()
     today = datetime.now().astimezone().strftime("%Y-%m-%d")
-    totals = daily_totals(cfg, st)
+    totals = daily_totals(cfg, st, since_start=True)
     need = cfg.get("streak", {}).get("min_day_xp", 500)
     active = {d for d, x in totals.items() if x >= need}
     held = loot.inventory(cfg, ledger, actions, now)["items"].get(loot.SHIELD, 0)  # shields come from chests, not coins

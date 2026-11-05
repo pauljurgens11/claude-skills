@@ -27,24 +27,6 @@
   .btn:hover { opacity: 1; color: var(--yellow); }
   .inset { background: rgba(18,14,9,.72); border: 1px solid #000; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
 
-  .hero { display: flex; gap: 6px; padding: 4px; margin-bottom: 4px; }
-  .stage { width: 76px; height: 92px; flex: none; position: relative; border-radius: 2px;
-           background: radial-gradient(ellipse at 50% 92%, rgba(0,0,0,.55) 0 18%, transparent 19%), linear-gradient(180deg, #241d15, #15110c); }
-  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; shape-rendering: crispEdges; }
-  .stage .aura { position: absolute; inset: 6px 10px 4px; border-radius: 50%; filter: blur(9px); opacity: .55; animation: pulse 2.4s ease-in-out infinite; }
-  @keyframes pulse { 50% { opacity: .9; transform: scale(1.06); } }
-  .glow { animation: shimmer 1.8s ease-in-out infinite; }
-  @keyframes shimmer { 50% { filter: brightness(1.5) drop-shadow(0 0 2px #fff); } }
-  .side { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .rank { color: var(--orange); font-size: 18px; line-height: 1; text-shadow: 1px 1px 0 #000; }
-  .sub { font-size: 13px; color: #c9b993; text-shadow: 1px 1px 0 #000; margin-bottom: 3px; }
-  .slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
-  .slot { height: 22px; border: 1px solid #000; border-radius: 2px; display: grid; place-items: center; font-size: 13px;
-          background: linear-gradient(180deg, #3b3227, #262019); box-shadow: inset 1px 1px 0 rgba(255,255,255,.1); position: relative; }
-  .slot i { position: absolute; left: 2px; right: 2px; bottom: 2px; height: 3px; border-radius: 1px; }
-  .slot:hover { background: linear-gradient(180deg, #5c4c39, #3a3125); }
-  .goal { margin-top: auto; font-size: 13px; line-height: 1.05; color: var(--text); text-shadow: 1px 1px 0 #000; }
-  .goal b { color: var(--yellow); font-weight: normal; }
 
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
   .tile { position: relative; height: 34px; display: flex; align-items: center; gap: 2px; padding: 0 5px 0 4px;
@@ -70,7 +52,7 @@
   .info .about { color: #c9b993; font-size: 13px; margin-top: 2px; }
   .xpbar { height: 7px; margin-top: 3px; background: #2a0d0d; border: 1px solid #000; position: relative; }
   .xpbar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #57e07a, #1f9a42); }
-  .compact .grid, .compact .info, .compact .hero { display: none; }
+  .compact .grid, .compact .info, .compact #tray { display: none; }
   .levelup { animation: flash 1.2s ease-out 3; }
   @keyframes flash { 0% { box-shadow: 0 0 0 2px var(--gold), 0 0 16px var(--gold); } 100% { box-shadow: 0 0 0 0 transparent; } }
   .banner { position: fixed; left: 6px; right: 6px; top: 26px; padding: 8px; text-align: center; border-radius: 3px; z-index: 5;
@@ -168,21 +150,13 @@
   .it small { display: block; font-size: 11px; color: #a8987a; } .it.locked { opacity: .45; }
   .mini2 svg { width: 22px; height: 19px; }
   .sec { font-size: 13px; color: var(--orange); margin: 5px 0 2px; } .empty, .qty { font-size: 13px; color: #a8987a; }
+  .petb { display: inline-block; font-size: 14px; animation: bob 1.1s ease-in-out infinite; }
   .pet { position: absolute; right: 2px; bottom: 4px; font-size: 18px; animation: bob 1.1s ease-in-out infinite; filter: drop-shadow(1px 1px 0 #000); }
 </style>
 </head>
 <body>
 <div class="panel" id="panel">
   <div class="bar"><span class="title" id="title">Skills</span><span id="chips"></span><span class="btn" id="fold" title="Fold">▾</span></div>
-  <div class="hero inset">
-    <div class="stage" id="stage"></div>
-    <div class="side">
-      <div class="rank" id="rank"></div>
-      <div class="sub" id="sub"></div>
-      <div class="slots" id="slots"></div>
-      <div class="goal" id="goal"></div>
-    </div>
-  </div>
   <div id="tray"></div>
   <div class="grid" id="grid"></div>
   <div class="info inset" id="info"></div>
@@ -194,89 +168,7 @@
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => Math.round(n).toLocaleString("en-US");
   const post = (msg) => window.webkit?.messageHandlers?.panel?.postMessage(msg);
-  const SLOT_ICON = { helm: "⛑️", body: "🛡️", amulet: "📿", cape: "🧣", weapon: "🗡️" };
   let stats = null, hovered = null, known = null;
-
-  // ---- gear ----
-  const tierIndex = (lv) => { let i = 0; stats.tiers.forEach((t, k) => { if (lv >= t.level) i = k; }); return i; };
-  const tierOf = (s) => stats.tiers[tierIndex(s.level)];
-  const itemName = (s, t) => (t.legend ? s.gear.legend : `${t.name} ${s.gear.item}`);
-  const nextTier = (s) => stats.tiers[tierIndex(s.level) + 1];
-  const xpAt = (lv) => stats.curve[lv];
-  const bySlot = (slot) => stats.skills.find((s) => s.gear?.slot === slot);
-
-  function shade(hex, k) {
-    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.max(0, Math.min(255, Math.round(v * k))));
-    return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
-  }
-  const R = (x, y, w, h, c, cls = "") => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" class="${cls}"/>`;
-
-  function hero() {
-    const g = {};
-    for (const slot of ["helm", "body", "amulet", "cape", "weapon"]) {
-      const s = bySlot(slot);
-      g[slot] = s ? { t: tierOf(s), i: tierIndex(s.level) } : { t: stats.tiers[0], i: 0 };
-    }
-    const skin = "#e2b48c", skinD = "#b98a63", pants = "#4b3a2a", boot = "#2a1f16";
-    let o = "";
-    // cape (behind): grows longer and gets a trim as it upgrades
-    { const { t, i } = g.cape, len = 14 + Math.min(i, 8), cls = t.glow ? "glow" : "";
-      o += R(9, 14, 14, len, shade(t.color, .8), cls) + R(10, 14, 12, len - 1, t.color, cls);
-      if (t.trim) o += R(9, 13 + len, 14, 1, t.trim, cls); }
-    // legs and boots
-    o += R(12, 27, 3, 9, pants) + R(17, 27, 3, 9, pants) + R(11, 35, 4, 3, boot) + R(17, 35, 4, 3, boot);
-    // body armour
-    { const { t, i } = g.body, c = t.color, cls = t.glow ? "glow" : "";
-      o += R(10, 14, 12, 13, c, cls) + R(10, 14, 1, 13, shade(c, 1.25), cls) + R(21, 14, 1, 13, shade(c, .7), cls);
-      if (i >= 1) o += R(10, 25, 12, 2, shade(c, .6), cls) + R(15, 25, 2, 2, t.trim || "#d6b24a", cls);   // belt
-      if (i >= 3) o += R(8, 14, 4, 3, shade(c, 1.15), cls) + R(20, 14, 4, 3, shade(c, 1.15), cls);    // pauldrons
-      if (i >= 5) o += R(13, 17, 6, 1, t.trim || shade(c, 1.4), cls) + R(15, 17, 2, 6, t.trim || shade(c, 1.4), cls); // crest
-    }
-    // arms
-    { const c = g.body.i >= 2 ? shade(g.body.t.color, .9) : "#7a5c3e";
-      o += R(8, 17, 2, 8, c) + R(22, 17, 2, 8, c) + R(8, 25, 2, 2, skin) + R(22, 25, 2, 2, skin); }
-    // head
-    o += R(12, 4, 8, 10, skin) + R(12, 12, 8, 2, skinD) + R(14, 8, 1, 2, "#111") + R(17, 8, 1, 2, "#111");
-    // helm: hood at cloth, metal helm above, visor, plume, then a crown
-    { const { t, i } = g.helm, c = t.color, cls = t.glow ? "glow" : "";
-      if (i === 0) o += R(11, 3, 10, 4, c) + R(11, 3, 1, 9, c) + R(20, 3, 1, 9, c);
-      else {
-        o += R(11, 2, 10, 5, c, cls) + R(11, 2, 10, 1, shade(c, 1.3), cls) + R(11, 7, 2, 5, shade(c, .85), cls) + R(19, 7, 2, 5, shade(c, .85), cls);
-        if (i >= 4) o += R(13, 7, 6, 1, shade(c, .5), cls);                           // visor brow
-        if (i >= 7) o += R(15, 0, 2, 2, t.trim || "#d33", cls) + R(16, -1, 3, 1, t.trim || "#d33", cls); // plume
-        if (t.legend) o += R(11, 0, 1, 2, t.trim, cls) + R(15, -1, 2, 3, t.trim, cls) + R(20, 0, 1, 2, t.trim, cls); // crown
-      } }
-    // amulet
-    { const { t, i } = g.amulet, cls = t.glow ? "glow" : "";
-      o += R(14, 14, 1, 2, "#8a7a55") + R(17, 14, 1, 2, "#8a7a55") + R(15, 16, 2, 2 + (i >= 6 ? 1 : 0), t.color, cls); }
-    // weapon: stick, then a blade that grows, gains a guard, then a glowing edge
-    { const { t, i } = g.weapon, c = t.color, cls = t.glow ? "glow" : "";
-      if (i === 0) o += R(24, 15, 1, 13, "#7a5530");
-      else {
-        const len = 8 + i;
-        o += R(24, 26 - len, 2, len, c, cls) + R(24, 26 - len, 1, len, shade(c, 1.35), cls) + R(24, 26 - len - 1, 1, 1, shade(c, 1.35), cls);
-        o += R(22, 26, 6, 1, i >= 3 ? (t.trim || "#c9a640") : "#6b4a2a", cls) + R(24, 27, 2, 2, "#5a3a20");
-      } }
-    const best = Object.values(g).reduce((a, b) => (b.i > a.i ? b : a));
-    const eq = window.Loot ? Loot.equipped() : {};
-    const auraColor = eq.aura ? Loot.drop(eq.aura).color : best.t.glow ? best.t.color : null;
-    const aura = auraColor ? `<div class="aura" style="background:${auraColor}"></div>` : "";
-    const pet = eq.pet ? `<span class="pet">${Loot.drop(eq.pet).icon}</span>` : "";
-    return aura + `<svg viewBox="-2 -2 36 42">${o}</svg>` + pet;
-  }
-
-  function titleFor(total) { let t = stats.titles[0]?.[1] || ""; for (const [lv, name] of stats.titles) if (total >= lv) t = name; return t; }
-
-  function nearestGoal() {
-    let best = null;
-    for (const s of stats.skills) {
-      const nt = nextTier(s);
-      if (!s.gear || !nt) continue;
-      const need = xpAt(nt.level) - s.xp;
-      if (!best || need < best.need) best = { s, nt, need };
-    }
-    return best;
-  }
 
   // ---- info box ----
   function skillInfo(s) {
@@ -288,15 +180,6 @@
       <div class="row"><span>Today:</span><span>+${fmt(s.today_xp)}</span></div>
       <div class="xpbar"><i style="width:${pct.toFixed(1)}%"></i></div>
       <div class="about">${s.about}</div>`;
-  }
-  function gearInfo(s) {
-    const t = tierOf(s), nt = nextTier(s);
-    return `<div class="name">${SLOT_ICON[s.gear.slot]} ${itemName(s, t)}</div>
-      <div class="row"><span>Powered by:</span><span>${s.icon} ${s.name} ${s.level}</span></div>
-      ${nt ? `<div class="row"><span>Next:</span><span>${itemName(s, nt)}</span></div>
-      <div class="row"><span>Needs:</span><span>${s.name} ${nt.level}</span></div>
-      <div class="row"><span>XP to go:</span><span>${fmt(xpAt(nt.level) - s.xp)}</span></div>`
-      : `<div class="about">Fully ascended. Nothing left to unlock.</div>`}`;
   }
   function overview() {
     const today = stats.skills.reduce((a, x) => a + x.today_xp, 0);
@@ -310,7 +193,7 @@
   const infoFor = (key) => {
     const [kind, id] = (key || "").split(":");
     const s = stats.skills.find((x) => x.id === id);
-    return !s ? overview() : kind === "gear" ? gearInfo(s) : skillInfo(s);
+    return !s ? overview() : skillInfo(s);
   };
   function paintInfo() { $("info").innerHTML = (typeof infoOverride === "string" && infoOverride) || infoFor(hovered); }
 
@@ -319,7 +202,7 @@
     const box = $("info");
     box.style.minHeight = "0";
     let tallest = 0;
-    for (const key of [null, ...stats.skills.flatMap((s) => ["skill:" + s.id, "gear:" + s.id])]) {
+    for (const key of [null, ...stats.skills.map((s) => "skill:" + s.id)]) {
       box.innerHTML = infoFor(key);
       tallest = Math.max(tallest, box.getBoundingClientRect().height);
     }
@@ -335,16 +218,7 @@
     known = Object.fromEntries(data.skills.map((s) => [s.id, s.level]));
 
     if (window.Loot) Loot.render(data);
-    $("stage").innerHTML = hero();
-    const eqTitle = window.Loot && Loot.equipped().title;
-    $("rank").textContent = eqTitle ? Loot.drop(eqTitle).name.replace("Title: ", "") : titleFor(data.total_level);
-    $("sub").textContent = `Total level ${data.total_level}`;
-    $("slots").innerHTML = data.skills.filter((s) => s.gear).map((s) => {
-      const t = tierOf(s);
-      return `<div class="slot" data-id="${s.id}">${SLOT_ICON[s.gear.slot] || "?"}<i style="background:${t.color}"></i></div>`;
-    }).join("");
-    const goal = nearestGoal();
-    $("goal").innerHTML = goal ? `Next unlock: <b>${itemName(goal.s, goal.nt)}</b><br>${goal.s.name} ${goal.nt.level} · ${fmt(goal.need)} XP to go` : "Everything unlocked.";
+    paintHeading();
 
     const upIds = ups.map((u) => u.s.id);
     $("grid").innerHTML = data.skills.map((s) => `
@@ -355,25 +229,21 @@
       </div>`).join("") + `<div class="tile total"><span class="k">Total level:</span><span class="v">${data.total_level}</span></div>`;
 
     document.querySelectorAll(".tile[data-id]").forEach((t) => hover(t, "skill:" + t.dataset.id));
-    document.querySelectorAll(".slot[data-id]").forEach((t) => hover(t, "gear:" + t.dataset.id));
     reserveInfoHeight();
     paintInfo();
     const stale = Date.now() - Date.parse(data.updated) > 10 * 60 * 1000;
-    $("title").textContent = stale ? "⚠ not updating" : "Skills";
+    if (stale) $("title").textContent = "⚠ not updating";
     if (ups.length) celebrate(ups);
     fit();
   }
 
   function celebrate(ups) {
-    const { s, from } = ups[0];
-    const unlocked = stats.tiers.filter((t) => t.level > from && t.level <= s.level).pop();
-    $("banner").innerHTML = unlocked && s.gear
-      ? `<div class="big">✨ New unlock! ✨</div>${itemName(s, unlocked)}<br>${s.icon} ${s.name} is now level ${s.level}.`
-      : `<div class="big">🎉 Level up! 🎉</div>${s.icon} ${s.name} is now level ${s.level}.`;
-    if (ups.length > 1) $("banner").innerHTML += `<br>+${ups.length - 1} more skill${ups.length > 2 ? "s" : ""}`;
+    const { s } = ups[0];
+    $("banner").innerHTML = `<div class="big">🎉 Level up! 🎉</div>${s.icon} ${s.name} is now level ${s.level}.` +
+      (ups.length > 1 ? `<br>+${ups.length - 1} more skill${ups.length > 2 ? "s" : ""}` : "");
     $("banner").classList.add("show");
     setTimeout(() => $("banner").classList.remove("show"), 7000);
-    jingle(!!unlocked);
+    jingle(false);
   }
 
   function jingle(big) {
@@ -393,13 +263,16 @@
   window.render = render;
   let infoOverride = null;
   window.showInfoHTML = (html) => { infoOverride = html; paintInfo(); };
-  window.repaintHero = () => { $("stage").innerHTML = hero(); const t = Loot.equipped().title;
-    $("rank").textContent = t ? Loot.drop(t).name.replace("Title: ", "") : titleFor(stats.total_level); };
+  // heading: your equipped title (or "Skills") with your pet beside it
+  function paintHeading() {
+    const eq = window.Loot ? Loot.equipped() : {};
+    $("title").innerHTML = (eq.title ? Loot.drop(eq.title).name.replace("Title: ", "") : "Skills") +
+      (eq.pet ? ` <span class="petb">${Loot.drop(eq.pet).icon}</span>` : "");
+  }
+  window.repaintHero = paintHeading;
   window.banner = (html) => { $("banner").innerHTML = html; $("banner").classList.add("show"); setTimeout(() => $("banner").classList.remove("show"), 5000); };
   document.fonts.ready.then(() => { if (stats) { reserveInfoHeight(); paintInfo(); fit(); } });  // font changes text height
   window.showInfo = (key) => { hovered = key; paintInfo(); };
-  // Preview other levels without touching real data: window.preview([10, 40, 70, 90, 99])
-  window.preview = (levels) => { const d = JSON.parse(JSON.stringify(stats)); d.skills.forEach((s, i) => { s.level = levels[i] ?? s.level; }); d.total_level = d.skills.reduce((a, s) => a + s.level, 0); known = null; render(d); };
   post({ type: "ready" });
 </script>
 </body>

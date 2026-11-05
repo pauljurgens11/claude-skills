@@ -38,12 +38,11 @@ def earn(cfg, ledger, skills, streak_now, now):
 
     def add(cid, tier, source):
         if cid in chests:
-            chests[cid]["source"] = source if cid == "welcome" or cid.startswith("streak-") else chests[cid]["source"]
+            chests[cid]["source"] = source if cid.startswith("streak-") else chests[cid]["source"]
         else:
             chests[cid] = {"tier": tier, "source": source, "t": now}
             new.append(cid)
 
-    add("welcome", "gold", "A welcome gift for starting your journey")
     tiers = [(t["id"], t["weight"]) for t in lc["tiers"]]
     order = [t["id"] for t in lc["tiers"]]
     better = lambda t: order[min(order.index(t) + 1, len(order) - 1)]
@@ -90,15 +89,17 @@ def contents(cfg, cid, tier_id):
 
 # ---- spending: replay the panel's action log --------------------------------------------
 
-COLLECTIBLE = ("pet", "aura", "title")
+COLLECTIBLE = ("pet", "title")
 
 
 def shop(cfg):
-    """What coins buy: chests to unbox, then big real-life rewards. Permissions are never for sale."""
+    """What coins buy: chests, the few treats marked with a price, then big real-life rewards."""
     lc = cfg["loot"]
     chests = [{"id": "chest:" + t["id"], "name": t["name"], "icon": "🎁", "cost": lc["chest_prices"][t["id"]],
                "kind": "chest", "tier": t["id"]} for t in lc["tiers"] if t["id"] in lc.get("chest_prices", {})]
-    return chests + [dict(r, kind="reward") for r in cfg.get("rewards", [])]
+    treats = [{"id": d["id"], "name": d["name"], "icon": d["icon"], "cost": d["price"], "kind": "treat"}
+              for d in lc["drops"] if "price" in d]
+    return chests + treats + [dict(r, kind="reward") for r in cfg.get("rewards", [])]
 
 
 def inventory(cfg, ledger, actions, now, earned_coins=0):
@@ -109,7 +110,7 @@ def inventory(cfg, ledger, actions, now, earned_coins=0):
     rewards = {r["id"]: r for r in shop(cfg)}
     dup_gold = {r["id"]: r["duplicate_gold"] for r in lc["rarities"]}
     drops = {d["id"]: d for d in lc["drops"]}
-    inv = {"gold": int(earned_coins), "items": {}, "owned": [], "equipped": {"pet": None, "aura": None, "title": None},
+    inv = {"gold": int(earned_coins), "items": {}, "owned": [], "equipped": {"pet": None, "title": None},
            "vouchers": {}, "opened": [], "boosts": [], "redeemed": []}
     chests = dict(ledger.get("chests", {}))  # plus chests bought below
     for a in actions:

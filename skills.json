@@ -1,5 +1,5 @@
 {
-  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop). xp_since: only work after this moment earns XP (history before it is still used to learn your typical day). Delete it to count all history. tiers: the gear tier each skill level unlocks (a skill's level picks the tier of its gear piece; level 99 gives the item's legend name). titles: [total level, title]. loot: chest drop rates, chest odds per rarity [common, rare, ultra, extraordinary] and the drop table (kinds: item, gold, pet, aura, title, voucher = a free real-life reward from the shop). rewards: your real-life shop; set names and gold prices to whatever you will actually treat yourself to.",
+  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop). xp_since: only work after this moment earns XP (history before it is still used to learn your typical day). Delete it to count all history. loot: chest drop rates, chest odds per rarity [common, rare, ultra, extraordinary] and the drop table (kinds: item, gold, pet, aura, title, voucher = a free real-life reward from the shop). rewards: your real-life shop; set names and gold prices to whatever you will actually treat yourself to. A drop with a price is also sold in the shop.",
   "balance": {
     "xp_per_typical_day": 1000,
     "grind_soft_cap": 2,
@@ -35,12 +35,7 @@
           "weight": 0.5
         }
       ],
-      "group": "you",
-      "gear": {
-        "slot": "helm",
-        "item": "Helm",
-        "legend": "Crown of Clear Intent"
-      }
+      "group": "you"
     },
     {
       "id": "afk",
@@ -52,12 +47,7 @@
           "afk_minutes": true,
           "gap_cap_seconds": 120
         }
-      ],
-      "gear": {
-        "slot": "body",
-        "item": "Platebody",
-        "legend": "Dreamweave Plate"
-      }
+      ]
     },
     {
       "id": "wispr",
@@ -68,12 +58,7 @@
         {
           "wispr_words": true
         }
-      ],
-      "gear": {
-        "slot": "amulet",
-        "item": "Amulet",
-        "legend": "Voice of the Storm"
-      }
+      ]
     },
     {
       "id": "messaging",
@@ -85,12 +70,7 @@
           "app_minutes": "(?i)slack|whatsapp",
           "default_typical": 60
         }
-      ],
-      "gear": {
-        "slot": "cape",
-        "item": "Cape",
-        "legend": "Banner of a Thousand Threads"
-      }
+      ]
     },
     {
       "id": "shipping",
@@ -103,130 +83,10 @@
           "author": "@me",
           "check_every_minutes": 10
         }
-      ],
-      "gear": {
-        "slot": "weapon",
-        "item": "Blade",
-        "legend": "Stormcaller"
-      }
+      ]
     }
   ],
-  "xp_since": "2026-11-05T21:56:46+02:00",
-  "tiers": [
-    {
-      "level": 1,
-      "name": "Cloth",
-      "color": "#8a6d4b"
-    },
-    {
-      "level": 10,
-      "name": "Copper",
-      "color": "#c07a3e"
-    },
-    {
-      "level": 20,
-      "name": "Iron",
-      "color": "#7d8288"
-    },
-    {
-      "level": 30,
-      "name": "Steel",
-      "color": "#c4cbd4"
-    },
-    {
-      "level": 40,
-      "name": "Cobalt",
-      "color": "#3f6fd6"
-    },
-    {
-      "level": 50,
-      "name": "Jade",
-      "color": "#2fae6a"
-    },
-    {
-      "level": 60,
-      "name": "Obsidian",
-      "color": "#4a3466",
-      "trim": "#b07cff"
-    },
-    {
-      "level": 70,
-      "name": "Crimson",
-      "color": "#b3242f",
-      "trim": "#ffb04a"
-    },
-    {
-      "level": 80,
-      "name": "Starmetal",
-      "color": "#e9d46a",
-      "trim": "#fff6c2"
-    },
-    {
-      "level": 90,
-      "name": "Celestial",
-      "color": "#7fe3ff",
-      "trim": "#ffffff",
-      "glow": true
-    },
-    {
-      "level": 99,
-      "name": "Ascended",
-      "color": "#ff5fd2",
-      "trim": "#ffe46b",
-      "glow": true,
-      "legend": true
-    }
-  ],
-  "titles": [
-    [
-      1,
-      "Newcomer"
-    ],
-    [
-      25,
-      "Wanderer"
-    ],
-    [
-      60,
-      "Apprentice"
-    ],
-    [
-      100,
-      "Adept"
-    ],
-    [
-      150,
-      "Journeyman"
-    ],
-    [
-      200,
-      "Veteran"
-    ],
-    [
-      250,
-      "Champion"
-    ],
-    [
-      300,
-      "Warlord"
-    ],
-    [
-      350,
-      "Archmage"
-    ],
-    [
-      400,
-      "Legend"
-    ],
-    [
-      450,
-      "Mythic"
-    ],
-    [
-      495,
-      "Ascended"
-    ]
-  ],
+  "xp_since": "2026-11-05T22:50:31+02:00",
   "streak": {
     "min_day_xp": 500,
     "_note": "a day keeps the streak alive once your skills together earn this much XP that day (half a normal day of one skill)"
@@ -444,15 +304,6 @@
         "weight": 10
       },
       {
-        "id": "a_ember",
-        "name": "Ember Aura",
-        "icon": "🔥",
-        "rarity": "rare",
-        "kind": "aura",
-        "weight": 10,
-        "color": "#ff7a2f"
-      },
-      {
         "id": "t_whisperer",
         "name": "Title: Prompt Whisperer",
         "icon": "🏷️",
@@ -475,15 +326,6 @@
         "rarity": "ultra",
         "kind": "pet",
         "weight": 15
-      },
-      {
-        "id": "a_frost",
-        "name": "Frost Aura",
-        "icon": "❄️",
-        "rarity": "ultra",
-        "kind": "aura",
-        "weight": 15,
-        "color": "#7fd8ff"
       },
       {
         "id": "v_coffee",
@@ -538,15 +380,6 @@
         "rarity": "extraordinary",
         "kind": "pet",
         "weight": 20
-      },
-      {
-        "id": "a_void",
-        "name": "Void Aura",
-        "icon": "🌌",
-        "rarity": "extraordinary",
-        "kind": "aura",
-        "weight": 15,
-        "color": "#9b5cff"
       },
       {
         "id": "v_gadget",
@@ -620,7 +453,8 @@
         "rarity": "rare",
         "kind": "voucher",
         "weight": 20,
-        "about": "One cookie. A good one."
+        "about": "One cookie. A good one.",
+        "price": 150
       },
       {
         "id": "v_friend",
@@ -665,7 +499,8 @@
         "rarity": "ultra",
         "kind": "voucher",
         "weight": 15,
-        "about": "A whole pudding. Yours."
+        "about": "A whole pudding. Yours.",
+        "price": 400
       },
       {
         "id": "v_cola",
@@ -674,7 +509,8 @@
         "rarity": "ultra",
         "kind": "voucher",
         "weight": 15,
-        "about": "Glass bottle if you can find one."
+        "about": "Glass bottle if you can find one.",
+        "price": 400
       }
     ],
     "coins_per_xp": 0.05,

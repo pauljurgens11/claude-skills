@@ -157,14 +157,11 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         guard let data = try? Data(contentsOf: dataDir.appendingPathComponent("stats.json")),
               let json = String(data: data, encoding: .utf8) else { return }
         web.evaluateJavaScript("window.render && window.render(\(json))")
-        if let levels = env["CLAUDE_SKILLS_PREVIEW"] {  // e.g. "10,40,70,90,99" to see later gear; display only
-            web.evaluateJavaScript("window.preview([\(levels)])")
-        }
         if let js = env["CLAUDE_SKILLS_DEMO_JS"], !demoRan {  // dev only: script a click-through for screenshots
             demoRan = true
             web.evaluateJavaScript(js)
         }
-        if let key = env["CLAUDE_SKILLS_HOVER"] {  // dev: show one hover state, e.g. "gear:afk"
+        if let key = env["CLAUDE_SKILLS_HOVER"] {  // dev: show one hover state, e.g. "skill:afk"
             web.evaluateJavaScript("window.showInfo('\(key)')")
         }
     }

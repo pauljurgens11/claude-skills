@@ -156,9 +156,8 @@
     const res = $("result"), more = L().unopened.length - 1;
     let what = win.about || "";
     if (win.kind === "gold") what = `+${fmt(win.amount)} coins`;
-    if (win.kind === "pet") what = "A new companion. Equip it in your bag.";
-    if (win.kind === "aura") what = "Your character can glow with it. Equip it in your bag.";
-    if (win.kind === "title") what = "Shown under your character. Equip it in your bag.";
+    if (win.kind === "pet") what = "A new companion next to your panel heading. Equip it in your bag.";
+    if (win.kind === "title") what = "Replaces your panel heading. Equip it in your bag.";
     if (win.kind === "voucher" && !win.about) what = "A real-life reward. Claim it in your bag when you take it.";
     res.innerHTML = `<div class="rname r-${win.rarity}" style="color:${r.color}">${r.name}!</div>
       <div class="big">${win.icon} ${win.name}</div><div class="what">${what}</div>
@@ -227,9 +226,9 @@
       return rows.join("") || `<div class="empty">Nothing yet. Open chests to fill your bag.</div>`;
     }
     if (tab === "collection") {
-      return ["pet", "aura", "title"].map((slot) => {
+      return ["pet", "title"].map((slot) => {
         const all = l.config.drops.filter((d) => d.kind === slot);
-        return `<div class="sec">${{ pet: "Pets", aura: "Auras", title: "Titles" }[slot]} · ${all.filter((d) => l.owned.includes(d.id)).length}/${all.length}</div>` +
+        return `<div class="sec">${{ pet: "Pets", title: "Titles" }[slot]} · ${all.filter((d) => l.owned.includes(d.id)).length}/${all.length}</div>` +
           all.map((d) => {
             if (!l.owned.includes(d.id)) return `<div class="it locked" style="--rc:${rarity(d.rarity).color}"><span class="ii">❔</span><span class="in">???<small>${rarity(d.rarity).name}</small></span></div>`;
             const on = l.equipped[slot] === d.id;
@@ -247,7 +246,8 @@
       return `<div class="it" style="--rc:${color}">${icon}<span class="in">${r.name}<small>${r.kind === "chest" ? "Unbox it for a random drop" : "Real-life reward"}</small></span>${right}</div>`;
     };
     return `<div class="sec">Chests</div>` + l.shop.filter((r) => r.kind === "chest").map(row).join("") +
-      `<div class="sec">Real-life rewards</div>` + l.shop.filter((r) => r.kind !== "chest").map(row).join("");
+      `<div class="sec">Treats</div>` + l.shop.filter((r) => r.kind === "treat").map(row).join("") +
+      `<div class="sec">Real-life rewards</div>` + l.shop.filter((r) => r.kind === "reward").map(row).join("");
   }
 
   function act(a, el) {
