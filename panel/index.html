@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --stone: #4a3f31; --stone-hi: #6b5a43; --stone-lo: #2a231a; --tile: #3a3126;
+    --tile-hi: #5a4b38; --tile-lo: #1d1812; --gold: #ffd84a; --yellow: #ffff3a;
+    --orange: #ff9a1f; --text: #f3e6c4; --green: #3fd16a; --you: #6fa8dc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; overflow: hidden; user-select: none; -webkit-user-select: none; cursor: default; }
+  body { font-family: "VT323", "Menlo", monospace; color: var(--text); }
+  .panel {
+    margin: 0; padding: 6px; border-radius: 6px;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,.05) 0 2px, transparent 3px) 0 0/13px 11px,
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,.12) 0 2px, transparent 3px) 0 0/17px 15px,
+      linear-gradient(180deg, var(--stone-hi), var(--stone) 30%, #3f3528);
+    border: 2px solid var(--stone-lo);
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,.18), inset -1px -1px 0 rgba(0,0,0,.5), 0 4px 14px rgba(0,0,0,.45);
+  }
+  .bar { height: 18px; display: flex; align-items: center; justify-content: space-between; padding: 0 2px 4px; }
+  .title { color: var(--orange); font-size: 17px; text-shadow: 1px 1px 0 #000; letter-spacing: .5px; }
+  .btn { color: var(--text); opacity: .55; font-size: 12px; width: 14px; text-align: center; text-shadow: 1px 1px 0 #000; }
+  .btn:hover { opacity: 1; color: var(--yellow); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+  .tile {
+    position: relative; height: 34px; display: flex; align-items: center; gap: 2px; padding: 0 5px 0 4px;
+    background: linear-gradient(180deg, var(--tile-hi), var(--tile) 45%, #2f281f);
+    border: 1px solid var(--tile-lo); border-radius: 3px;
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,.12), inset -1px -1px 0 rgba(0,0,0,.4);
+  }
+  .tile.you { border-color: #1d2a38; box-shadow: inset 1px 1px 0 rgba(111,168,220,.35), inset -1px -1px 0 rgba(0,0,0,.4); }
+  .tile:hover, .tile.sel { background: linear-gradient(180deg, #74624a, #4a3e2f 45%, #3a3125); }
+  .icon { font-size: 17px; width: 22px; text-align: center; filter: drop-shadow(1px 1px 0 #000) saturate(.85); }
+  .lv { flex: 1; display: grid; grid-template-columns: 1fr; justify-items: end; line-height: 1; position: relative; height: 26px; }
+  .lv .a, .lv .b { position: absolute; font-size: 18px; color: var(--yellow); text-shadow: 1px 1px 0 #000; }
+  .lv .a { top: 1px; left: 2px; }
+  .lv .b { bottom: 0; right: 0; }
+  .lv .slash { position: absolute; left: 50%; top: 50%; width: 1px; height: 22px; background: rgba(0,0,0,.55);
+               transform: translate(-50%, -50%) rotate(35deg); box-shadow: 1px 0 0 rgba(255,255,255,.12); }
+  .today { position: absolute; top: 2px; right: 3px; width: 5px; height: 5px; border-radius: 50%;
+           background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .tile.total { justify-content: center; flex-direction: column; gap: 0; }
+  .tile.total .k { font-size: 12px; white-space: nowrap; color: var(--yellow); text-shadow: 1px 1px 0 #000; }
+  .tile.total .v { font-size: 18px; color: var(--yellow); text-shadow: 1px 1px 0 #000; }
+  .info {
+    margin-top: 5px; min-height: 66px; padding: 5px 6px; border-radius: 3px; font-size: 15px; line-height: 1.1;
+    background: rgba(18,14,9,.72); border: 1px solid #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .info .name { color: var(--orange); font-size: 16px; text-shadow: 1px 1px 0 #000; }
+  .info .row { display: flex; justify-content: space-between; text-shadow: 1px 1px 0 #000; }
+  .info .row span:last-child { color: var(--yellow); }
+  .info .about { color: #c9b993; font-size: 13px; margin-top: 2px; }
+  .xpbar { height: 7px; margin-top: 3px; background: #2a0d0d; border: 1px solid #000; position: relative; }
+  .xpbar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #57e07a, #1f9a42); }
+  .legend { display: flex; gap: 8px; margin-top: 4px; font-size: 12px; color: #b9a983; text-shadow: 1px 1px 0 #000; }
+  .legend b { display: inline-block; width: 7px; height: 7px; border: 1px solid #000; margin-right: 3px; vertical-align: -1px; }
+  .compact .grid, .compact .info, .compact .legend { display: none; }
+  .levelup { animation: flash 1.2s ease-out 3; }
+  @keyframes flash { 0% { box-shadow: 0 0 0 2px var(--gold), 0 0 16px var(--gold); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .banner {
+    position: fixed; left: 6px; right: 6px; top: 26px; padding: 8px; text-align: center; border-radius: 3px; z-index: 5;
+    background: rgba(12,9,5,.92); border: 1px solid var(--gold); color: var(--yellow); text-shadow: 1px 1px 0 #000;
+    font-size: 15px; opacity: 0; transform: translateY(-6px); transition: all .25s; pointer-events: none;
+  }
+  .banner.show { opacity: 1; transform: none; }
+  .banner .big { font-size: 20px; color: var(--orange); }
+</style>
+</head>
+<body>
+<div class="panel" id="panel">
+  <div class="bar" id="drag">
+    <span class="title" id="title">Skills</span>
+    <span><span class="btn" id="fold" title="Fold">▾</span></span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="info" id="info"></div>
+  <div class="legend"><span><b style="background:#2f3d4c"></b>you</span><span><b style="background:#4a3e2f"></b>your agents</span><span><b style="background:var(--green);border-radius:50%"></b>xp today</span></div>
+</div>
+<div class="banner" id="banner"></div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n).toLocaleString("en-US");
+  const post = (msg) => window.webkit?.messageHandlers?.panel?.postMessage(msg);
+  let stats = null, hovered = null, known = null;
+
+  function infoFor(s) {
+    if (!s) {
+      const today = stats.skills.reduce((a, x) => a + x.today_xp, 0);
+      const best = [...stats.skills].sort((a, b) => b.today_xp - a.today_xp)[0];
+      return `<div class="name">Total level: ${stats.total_level}</div>
+        <div class="row"><span>Total XP:</span><span>${fmt(stats.total_xp)}</span></div>
+        <div class="row"><span>XP today:</span><span>${fmt(today)}</span></div>
+        <div class="row"><span>Best today:</span><span>${best && best.today_xp ? best.icon + " " + best.name : "-"}</span></div>`;
+    }
+    const max = s.next_xp == null;
+    const pct = max ? 100 : (100 * (s.xp - s.level_xp)) / (s.next_xp - s.level_xp);
+    return `<div class="name">${s.icon} ${s.name}</div>
+      <div class="row"><span>${s.name} XP:</span><span>${fmt(s.xp)}</span></div>
+      ${max ? "" : `<div class="row"><span>Next level at:</span><span>${fmt(s.next_xp)}</span></div>
+      <div class="row"><span>Remaining XP:</span><span>${fmt(s.next_xp - s.xp)}</span></div>`}
+      <div class="row"><span>Today:</span><span>+${fmt(s.today_xp)}</span></div>
+      <div class="xpbar"><i style="width:${pct.toFixed(1)}%"></i></div>
+      <div class="about">${s.about}</div>`;
+  }
+
+  function paintInfo() { $("info").innerHTML = infoFor(stats.skills.find((x) => x.id === hovered)); }
+
+  function render(data) {
+    const first = !stats;
+    stats = data;
+    const ups = [];
+    if (known) for (const s of data.skills) if (known[s.id] && s.level > known[s.id]) ups.push(s);
+    known = Object.fromEntries(data.skills.map((s) => [s.id, s.level]));
+    $("grid").innerHTML = data.skills.map((s) => `
+      <div class="tile ${s.group === "you" ? "you" : ""} ${ups.includes(s) ? "levelup" : ""}" data-id="${s.id}">
+        <span class="icon">${s.icon}</span>
+        <span class="lv"><span class="a">${s.level}</span><span class="slash"></span><span class="b">${s.level}</span></span>
+        ${s.today_xp > 0 ? '<span class="today"></span>' : ""}
+      </div>`).join("") + `
+      <div class="tile total"><span class="k">Total level:</span><span class="v">${data.total_level}</span></div>`;
+    for (const t of document.querySelectorAll(".tile[data-id]")) {
+      t.onmouseenter = () => { hovered = t.dataset.id; paintInfo(); };
+      t.onmouseleave = () => { hovered = null; paintInfo(); };
+    }
+    paintInfo();
+    const stale = Date.now() - Date.parse(data.updated) > 10 * 60 * 1000;
+    $("title").textContent = `Skills · ${data.total_level}` + (stale ? "  ⚠ not updating" : "");
+    if (ups.length) celebrate(ups);
+    fit();
+  }
+
+  function celebrate(ups) {
+    const s = ups[0];
+    $("banner").innerHTML = `<div class="big">🎉 Level up! 🎉</div>${s.icon} ${s.name} is now level ${s.level}.` +
+      (ups.length > 1 ? `<br>+${ups.length - 1} more skill${ups.length > 2 ? "s" : ""}` : "");
+    $("banner").classList.add("show");
+    setTimeout(() => $("banner").classList.remove("show"), 6000);
+    jingle();
+  }
+
+  function jingle() {
+    try {
+      const ctx = new AudioContext();
+      [523, 659, 784, 1047, 784, 1047].forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "square"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.05, ctx.currentTime + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.2);
+        o.connect(g).connect(ctx.destination);
+        o.start(ctx.currentTime + i * 0.12); o.stop(ctx.currentTime + i * 0.12 + 0.22);
+      });
+    } catch (e) {}
+  }
+
+  function fit() { requestAnimationFrame(() => post({ type: "size", height: Math.ceil($("panel").getBoundingClientRect().height) })); }
+
+  $("fold").onclick = () => { document.body.classList.toggle("compact"); $("fold").textContent = document.body.classList.contains("compact") ? "▸" : "▾"; fit(); };
+  window.render = render;
+  window.demoLevelUp = () => { const s = stats.skills[0]; known[s.id] = s.level - 1; render(stats); };
+  post({ type: "ready" });
+</script>
+</body>
+</html>
