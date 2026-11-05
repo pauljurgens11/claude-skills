@@ -21,8 +21,9 @@ import json
 import math
 import os
 import re
+import sqlite3
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -46,6 +47,9 @@ class Paths:
         self.projects = Path(projects or env("CLAUDE_PROJECTS_DIR") or Path.home() / ".claude" / "projects")
         self.data = Path(data or env("CLAUDE_SKILLS_DATA") or DEFAULT_DATA)
         self.state = self.data / "state.json"
+        self.activity = self.data / "activity.jsonl"  # written by the panel: front app samples
+        self.wispr = Path(env("CLAUDE_SKILLS_WISPR_DB")
+                          or Path.home() / "Library" / "Application Support" / "Wispr Flow" / "flow.sqlite")
         self.stats = self.data / "stats.json"
 
 
@@ -129,6 +133,10 @@ def classify_queued(d):
 class Counter:
     def __init__(self, cfg, st):
         self.cfg, self.days, self.seen = cfg, st["days"], st["seen"]
+        since = cfg.get("xp_since")
+        self.since = datetime.fromisoformat(since).timestamp() if since else None
+        self.ts = 0.0  # timestamp of the event being counted
+
 
     def first_time(self, key):
         if not key:
@@ -140,6 +148,8 @@ class Counter:
         return True
 
     def add(self, day, skill, amount):
+        if self.since is not None and self.ts < self.since:
+            day = "pre:" + day  # learns your typical day, earns no XP
         if amount > 0:
             bucket = self.days.setdefault(day, {})
             bucket[skill] = round(bucket.get(skill, 0) + amount, 4)
@@ -166,6 +176,21 @@ class Counter:
                 ):
                     return self.add(day, s["id"], r.get("weight", 1))
 
+    def matching(self, key):
+        for s in self.cfg["skills"]:
+            for r in s["rules"]:
+                if r.get(key):
+                    yield s["id"], r
+
+    def dictated(self, day, words):
+        for sid, r in self.matching("wispr_words"):
+            self.add(day, sid, words * r.get("weight", 1))
+
+    def app_time(self, day, app, seconds):
+        for sid, r in self.matching("app_minutes"):
+            if re.search(r["app_minutes"], app):
+                self.add(day, sid, seconds / 60 * r.get("weight", 1))
+
     def busy(self, day, seconds):
         for s in self.cfg["skills"]:
             for r in s["rules"]:
@@ -178,6 +203,7 @@ def handle(d, fstate, counter):
         return
     typ = d.get("type")
     day, ts = local_day(d["timestamp"])
+    counter.ts = ts
     if typ == "attachment":
         q = classify_queued(d)
         if q and counter.first_time(q[0]):
@@ -226,6 +252,51 @@ def scan_file(path, fstate, counter):
     fstate["off"] = off + end
 
 
+def scan_wispr(db, st, counter):
+    """Words per dictation from Wispr Flow's own database, read-only; never the text."""
+    if not db.exists():
+        return
+    since = st.get("wispr_since", "")
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
+    try:
+        rows = con.execute(
+            "SELECT transcriptEntityId, timestamp, numWords FROM History "
+            "WHERE timestamp >= ? AND numWords > 0 AND status != 'no_audio' ORDER BY timestamp", (since,)).fetchall()
+    finally:
+        con.close()
+    for tid, ts, words in rows:
+        t = datetime.fromisoformat(ts.replace(" +", "+").replace(" -", "-"))
+        counter.ts = t.timestamp()
+        if counter.first_time("wispr:" + tid):
+            counter.dictated(t.astimezone().strftime("%Y-%m-%d"), words)
+    if rows:  # re-read the last day each run: a dictation can be finalised after it is stamped
+        last = datetime.fromisoformat(rows[-1][1].replace(" +", "+").replace(" -", "-"))
+        st["wispr_since"] = (last.astimezone(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def scan_activity(path, st, counter):
+    """Front-app samples the panel appends: {"t": epoch, "app": bundle id, "s": seconds}."""
+    if not path.exists():
+        return
+    fstate = st.setdefault("activity", {})
+    size, off = path.stat().st_size, fstate.get("off", 0)
+    if size < off:
+        off = 0
+    with path.open("rb") as fh:
+        fh.seek(off)
+        chunk = fh.read()
+    end = chunk.rfind(b"\n") + 1
+    for raw in chunk[:end].splitlines():
+        try:
+            d = json.loads(raw)
+            counter.ts = d["t"]
+            day = datetime.fromtimestamp(d["t"]).astimezone().strftime("%Y-%m-%d")
+            counter.app_time(day, d["app"], d["s"])
+        except (ValueError, KeyError, TypeError):
+            continue
+    fstate["off"] = off + end
+
+
 def median(xs):
     xs = sorted(xs)
     n = len(xs)
@@ -239,8 +310,15 @@ def calibrate(cfg, st):
         sid = s["id"]
         if (st["calib"].get(sid) or {}).get("frozen"):
             continue
-        vals = [d[sid] for d in st["days"].values() if d.get(sid, 0) > 0]
-        st["calib"][sid] = {"typical": median(vals) or 1, "frozen": len(vals) >= need}
+        merged = {}
+        for key, bucket in st["days"].items():
+            day = merged.setdefault(key.removeprefix("pre:"), {})
+            for k, v in bucket.items():
+                day[k] = day.get(k, 0) + v
+        vals = [d[sid] for d in merged.values() if d.get(sid, 0) > 0]
+        default = next((r["default_typical"] for r in s["rules"] if "default_typical" in r), None)
+        typical = median(vals) if len(vals) >= need or default is None else default
+        st["calib"][sid] = {"typical": typical or 1, "frozen": len(vals) >= need}
 
 
 def day_xp(raw, typical, bal):
@@ -272,6 +350,8 @@ def build_stats(cfg, st):
         sid, typical = s["id"], st["calib"][s["id"]]["typical"]
         xp = today_xp = 0.0
         for day, bucket in st["days"].items():
+            if day.startswith("pre:"):
+                continue
             gained = day_xp(bucket.get(sid, 0), typical, bal)
             xp += gained
             if day == today:
@@ -279,7 +359,7 @@ def build_stats(cfg, st):
         lv = level_for(xp, table)
         out.append({
             "id": sid, "name": s["name"], "icon": s["icon"], "group": s.get("group", ""),
-            "about": s.get("about", ""), "xp": int(xp), "level": lv, "level_xp": table[lv],
+            "about": s.get("about", ""), "gear": s.get("gear"), "xp": int(xp), "level": lv, "level_xp": table[lv],
             "next_xp": table[lv + 1] if lv + 1 < len(table) else None,
             "today_xp": int(today_xp), "today_raw": round(st["days"].get(today, {}).get(sid, 0), 1),
             "typical_day": round(typical, 2),
@@ -289,6 +369,9 @@ def build_stats(cfg, st):
         "max_level": cfg["curve"]["max_level"],
         "total_level": sum(s["level"] for s in out),
         "total_xp": sum(s["xp"] for s in out),
+        "curve": table,
+        "tiers": cfg.get("tiers", []),
+        "titles": cfg.get("titles", []),
         "skills": out,
     }
 
@@ -305,6 +388,11 @@ def run(paths):
         except OSError:
             continue  # deleted or unreadable mid-scan; picked up next run
     st["files"] = {k: v for k, v in st["files"].items() if k in present}
+    try:
+        scan_wispr(paths.wispr, st, counter)
+    except sqlite3.Error:
+        pass  # Wispr Flow busy or changed its schema; try again next run
+    scan_activity(paths.activity, st, counter)
     calibrate(cfg, st)
     paths.data.mkdir(parents=True, exist_ok=True)
     save_json(paths.state, {**st, "seen": sorted(st["seen"])})

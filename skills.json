@@ -1,55 +1,228 @@
 {
-  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop).",
+  "_help": "Edit freely, the tracker rescans history by itself after a change. Tool calls go to the FIRST skill whose rule matches (so put specific rules above general ones). A prompt counts once per skill whose rule matches. prompt kinds: turn (a new message), midturn (sent while the agent works), interrupt (you pressed stop). xp_since: only work after this moment earns XP (history before it is still used to learn your typical day). Delete it to count all history. tiers: the gear tier each skill level unlocks (a skill's level picks the tier of its gear piece; level 99 gives the item's legend name). titles: [total level, title].",
   "balance": {
     "xp_per_typical_day": 1000,
     "grind_soft_cap": 2,
-    "max_day_multiple": 5,
+    "max_day_multiple": 12,
     "calibration_min_days": 5
   },
-  "curve": { "max_level": 99, "xp_at_max": 1500000, "ratio": 1.068 },
+  "curve": {
+    "max_level": 99,
+    "xp_at_max": 2188892,
+    "ratio": 1.104,
+    "_note": "fitted so 365 days at 3,000 XP per skill (a maxed-out day) reach level 92; level 99 is about two years of that"
+  },
   "skills": [
-    { "id": "prompting", "name": "Prompting", "icon": "💬", "group": "you",
-      "about": "New messages you write. Longer prompts earn a little more.",
-      "rules": [ { "prompt": ["turn"], "weight": 1, "chars_bonus_per": 400, "chars_bonus_max": 2 } ] },
-    { "id": "steering", "name": "Steering", "icon": "🧭", "group": "you",
-      "about": "Course corrections: messages sent mid-turn and interrupts.",
-      "rules": [ { "prompt": ["midturn", "interrupt"], "weight": 1 } ] },
-    { "id": "planning", "name": "Planning", "icon": "📜", "group": "you",
-      "about": "Plan mode and questions the agent puts to you.",
-      "rules": [ { "tool": "^(EnterPlanMode|ExitPlanMode|AskUserQuestion)$" } ] },
-    { "id": "afk", "name": "AFK Coding", "icon": "💤", "group": "agents",
+    {
+      "id": "prompting",
+      "name": "Prompting",
+      "icon": "💬",
+      "about": "Every message you send: new prompts, mid-turn corrections, interrupts. Longer prompts earn a little more.",
+      "rules": [
+        {
+          "prompt": [
+            "turn",
+            "midturn"
+          ],
+          "weight": 1,
+          "chars_bonus_per": 400,
+          "chars_bonus_max": 2
+        },
+        {
+          "prompt": [
+            "interrupt"
+          ],
+          "weight": 0.5
+        }
+      ],
+      "group": "you",
+      "gear": {
+        "slot": "helm",
+        "item": "Helm",
+        "legend": "Crown of Clear Intent"
+      }
+    },
+    {
+      "id": "afk",
+      "name": "AFK Coding",
+      "icon": "💤",
       "about": "Minutes your agents work on their own between your messages.",
-      "rules": [ { "afk_minutes": true, "gap_cap_seconds": 120 } ] },
-    { "id": "ultracode", "name": "Ultracode", "icon": "⚡", "group": "agents",
-      "about": "Workflow runs and ultracode / ultra review prompts.",
-      "rules": [ { "tool": "^Workflow$", "weight": 3 },
-                 { "prompt": ["turn", "midturn"], "contains": "(?i)\\bultracode\\b|/code-review ultra" } ] },
-    { "id": "delegation", "name": "Delegation", "icon": "🧙", "group": "agents",
-      "about": "Subagents, side sessions and messages between agents.",
-      "rules": [ { "tool": "^(Agent|Task|SendMessage)$|^mcp__ccd_session__(start_session|hand_off_to_session)$" } ] },
-    { "id": "research", "name": "Research", "icon": "🔭", "group": "agents",
-      "about": "Web search, page fetches, browsers and docs lookups.",
-      "rules": [ { "tool": "^(WebSearch|WebFetch)$|^mcp__(Claude_Browser|claude-in-chrome|context7)__" } ] },
-    { "id": "testing", "name": "Testing", "icon": "🧪", "group": "agents",
-      "about": "Test runs: pytest, make test/check, npm test, vitest, playwright...",
-      "rules": [ { "bash": "\\b(pytest|make (test|check)|npm (run )?test|vitest|jest|playwright|go test|cargo test)\\b" } ] },
-    { "id": "shipping", "name": "Shipping", "icon": "🚀", "group": "agents",
-      "about": "Commits, pushes and pull requests.",
-      "rules": [ { "bash": "\\b(git (commit|push)|gh pr (create|merge))\\b" } ] },
-    { "id": "building", "name": "Building", "icon": "🔨", "group": "agents",
-      "about": "File edits and new files.",
-      "rules": [ { "tool": "^(Edit|Write|MultiEdit|NotebookEdit)$" } ] },
-    { "id": "scouting", "name": "Scouting", "icon": "🗺️", "group": "agents",
-      "about": "Reading and searching code.",
-      "rules": [ { "tool": "^(Read|Grep|Glob|LS)$" } ] },
-    { "id": "shell", "name": "Shell", "icon": "🐚", "group": "agents",
-      "about": "Every other shell command.",
-      "rules": [ { "tool": "^Bash$" } ] },
-    { "id": "artistry", "name": "Artistry", "icon": "🎨", "group": "agents",
-      "about": "Artifacts, docs, charts and files sent to you.",
-      "rules": [ { "tool": "^(Artifact|SendUserFile)$|^mcp__(visualize|1a59c906[^_]*)__" } ] },
-    { "id": "connecting", "name": "Connecting", "icon": "🔌", "group": "agents",
-      "about": "Calls to other MCP servers (data, APIs, services).",
-      "rules": [ { "tool": "^mcp__(?!ccd_)" } ] }
+      "rules": [
+        {
+          "afk_minutes": true,
+          "gap_cap_seconds": 120
+        }
+      ],
+      "gear": {
+        "slot": "body",
+        "item": "Platebody",
+        "legend": "Dreamweave Plate"
+      }
+    },
+    {
+      "id": "wispr",
+      "name": "Wispr Flow",
+      "icon": "🎙️",
+      "about": "Words you dictate with Wispr Flow (counts only, never the text).",
+      "rules": [
+        {
+          "wispr_words": true
+        }
+      ],
+      "gear": {
+        "slot": "amulet",
+        "item": "Amulet",
+        "legend": "Voice of the Storm"
+      }
+    },
+    {
+      "id": "messaging",
+      "name": "Messaging",
+      "icon": "📨",
+      "about": "Active minutes with Slack or WhatsApp in front (idle time does not count).",
+      "rules": [
+        {
+          "app_minutes": "(?i)slack|whatsapp",
+          "default_typical": 60
+        }
+      ],
+      "gear": {
+        "slot": "cape",
+        "item": "Cape",
+        "legend": "Banner of a Thousand Threads"
+      }
+    },
+    {
+      "id": "shipping",
+      "name": "Shipping",
+      "icon": "🚀",
+      "about": "Commits, pushes and pull requests your agents make.",
+      "rules": [
+        {
+          "bash": "\\b(git (commit|push)|gh pr (create|merge))\\b"
+        }
+      ],
+      "gear": {
+        "slot": "weapon",
+        "item": "Blade",
+        "legend": "Stormcaller"
+      }
+    }
+  ],
+  "xp_since": "2026-11-05T21:56:46+02:00",
+  "tiers": [
+    {
+      "level": 1,
+      "name": "Cloth",
+      "color": "#8a6d4b"
+    },
+    {
+      "level": 10,
+      "name": "Copper",
+      "color": "#c07a3e"
+    },
+    {
+      "level": 20,
+      "name": "Iron",
+      "color": "#7d8288"
+    },
+    {
+      "level": 30,
+      "name": "Steel",
+      "color": "#c4cbd4"
+    },
+    {
+      "level": 40,
+      "name": "Cobalt",
+      "color": "#3f6fd6"
+    },
+    {
+      "level": 50,
+      "name": "Jade",
+      "color": "#2fae6a"
+    },
+    {
+      "level": 60,
+      "name": "Obsidian",
+      "color": "#4a3466",
+      "trim": "#b07cff"
+    },
+    {
+      "level": 70,
+      "name": "Crimson",
+      "color": "#b3242f",
+      "trim": "#ffb04a"
+    },
+    {
+      "level": 80,
+      "name": "Starmetal",
+      "color": "#e9d46a",
+      "trim": "#fff6c2"
+    },
+    {
+      "level": 90,
+      "name": "Celestial",
+      "color": "#7fe3ff",
+      "trim": "#ffffff",
+      "glow": true
+    },
+    {
+      "level": 99,
+      "name": "Ascended",
+      "color": "#ff5fd2",
+      "trim": "#ffe46b",
+      "glow": true,
+      "legend": true
+    }
+  ],
+  "titles": [
+    [
+      1,
+      "Newcomer"
+    ],
+    [
+      25,
+      "Wanderer"
+    ],
+    [
+      60,
+      "Apprentice"
+    ],
+    [
+      100,
+      "Adept"
+    ],
+    [
+      150,
+      "Journeyman"
+    ],
+    [
+      200,
+      "Veteran"
+    ],
+    [
+      250,
+      "Champion"
+    ],
+    [
+      300,
+      "Warlord"
+    ],
+    [
+      350,
+      "Archmage"
+    ],
+    [
+      400,
+      "Legend"
+    ],
+    [
+      450,
+      "Mythic"
+    ],
+    [
+      495,
+      "Ascended"
+    ]
   ]
 }

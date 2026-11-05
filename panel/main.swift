@@ -10,8 +10,10 @@ let home = URL(fileURLWithPath: env["CLAUDE_SKILLS_HOME"]
 let python = env["CLAUDE_SKILLS_PYTHON"] ?? "/usr/bin/python3"
 let dataDir = URL(fileURLWithPath: env["CLAUDE_SKILLS_DATA"]
     ?? NSHomeDirectory() + "/Library/Application Support/ClaudeSkills")
+let sampleSeconds: Double = 15
 let refreshSeconds = Double(env["CLAUDE_SKILLS_REFRESH"] ?? "60") ?? 60
-let width: CGFloat = 230
+let scale = CGFloat(Double(env["CLAUDE_SKILLS_SCALE"] ?? "1.5") ?? 1.5)
+let width: CGFloat = 230 * scale
 
 final class Panel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -21,7 +23,7 @@ final class Panel: NSPanel {
 final class DragWebView: WKWebView {
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
-        if p.y < 22 && p.x < bounds.width - 34 { window?.performDrag(with: event) } else { super.mouseDown(with: event) }
+        if p.y < 22 * scale && p.x < bounds.width - 30 * scale { window?.performDrag(with: event) } else { super.mouseDown(with: event) }
     }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
@@ -49,6 +51,7 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         config.userContentController.add(self, name: "panel")
         web = DragWebView(frame: NSRect(origin: .zero, size: frame.size), configuration: config)
         web.setValue(false, forKey: "drawsBackground")
+        web.pageZoom = scale
         web.autoresizingMask = [.width, .height]
         panel.contentView = web
         let page = home.appendingPathComponent("panel/index.html")
@@ -57,6 +60,7 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         panel.orderFrontRegardless()
 
         Timer.scheduledTimer(withTimeInterval: refreshSeconds, repeats: true) { _ in self.refresh() }
+        Timer.scheduledTimer(withTimeInterval: sampleSeconds, repeats: true) { _ in self.sampleFrontApp() }
         let nc = NotificationCenter.default, ws = NSWorkspace.shared.notificationCenter
         nc.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { _ in self.keepOnScreen() }
         ws.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in self.refresh() }
@@ -70,7 +74,7 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
             push()      // show the last numbers at once,
             refresh()   // then catch up on new transcript lines
         case "size":
-            if let h = body["height"] as? Double { resize(CGFloat(h)) }
+            if let h = body["height"] as? Double { resize(CGFloat(h) * scale) }
         default: break
         }
     }
@@ -108,10 +112,28 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         do { try p.run(); running = p; startedAt = Date() } catch { NSLog("ClaudeSkills: cannot start \(python): \(error)") }
     }
 
+    /// Which app you are actively using: one line per 15s, only if you touched keyboard or mouse in the last minute.
+    func sampleFrontApp() {
+        let anyInput = CGEventType(rawValue: ~0)!
+        let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyInput)
+        guard idle < 60, let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
+        let line = "{\"t\":\(Int(Date().timeIntervalSince1970)),\"app\":\"\(app)\",\"s\":\(Int(sampleSeconds))}\n"
+        let url = dataDir.appendingPathComponent("activity.jsonl")
+        try? FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true)
+        if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil) }
+        guard let fh = try? FileHandle(forWritingTo: url) else { return }
+        defer { try? fh.close() }
+        _ = try? fh.seekToEnd()
+        try? fh.write(contentsOf: Data(line.utf8))
+    }
+
     func push() {
         guard let data = try? Data(contentsOf: dataDir.appendingPathComponent("stats.json")),
               let json = String(data: data, encoding: .utf8) else { return }
         web.evaluateJavaScript("window.render && window.render(\(json))")
+        if let levels = env["CLAUDE_SKILLS_PREVIEW"] {  // e.g. "10,40,70,90,99" to see later gear; display only
+            web.evaluateJavaScript("window.preview([\(levels)])")
+        }
     }
 }
 

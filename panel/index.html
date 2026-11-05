@@ -7,13 +7,13 @@
   :root {
     --stone: #4a3f31; --stone-hi: #6b5a43; --stone-lo: #2a231a; --tile: #3a3126;
     --tile-hi: #5a4b38; --tile-lo: #1d1812; --gold: #ffd84a; --yellow: #ffff3a;
-    --orange: #ff9a1f; --text: #f3e6c4; --green: #3fd16a; --you: #6fa8dc;
+    --orange: #ff9a1f; --text: #f3e6c4; --green: #3fd16a;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: transparent; overflow: hidden; user-select: none; -webkit-user-select: none; cursor: default; }
   body { font-family: "VT323", "Menlo", monospace; color: var(--text); }
   .panel {
-    margin: 0; padding: 6px; border-radius: 6px;
+    padding: 6px; border-radius: 6px;
     background:
       radial-gradient(circle at 20% 15%, rgba(255,255,255,.05) 0 2px, transparent 3px) 0 0/13px 11px,
       radial-gradient(circle at 70% 60%, rgba(0,0,0,.12) 0 2px, transparent 3px) 0 0/17px 15px,
@@ -23,81 +23,167 @@
   }
   .bar { height: 18px; display: flex; align-items: center; justify-content: space-between; padding: 0 2px 4px; }
   .title { color: var(--orange); font-size: 17px; text-shadow: 1px 1px 0 #000; letter-spacing: .5px; }
-  .btn { color: var(--text); opacity: .55; font-size: 12px; width: 14px; text-align: center; text-shadow: 1px 1px 0 #000; }
+  .btn { color: var(--text); opacity: .55; font-size: 13px; width: 14px; text-align: center; text-shadow: 1px 1px 0 #000; }
   .btn:hover { opacity: 1; color: var(--yellow); }
+  .inset { background: rgba(18,14,9,.72); border: 1px solid #000; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+
+  .hero { display: flex; gap: 6px; padding: 4px; margin-bottom: 4px; }
+  .stage { width: 76px; height: 92px; flex: none; position: relative; border-radius: 2px;
+           background: radial-gradient(ellipse at 50% 92%, rgba(0,0,0,.55) 0 18%, transparent 19%), linear-gradient(180deg, #241d15, #15110c); }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; shape-rendering: crispEdges; }
+  .stage .aura { position: absolute; inset: 6px 10px 4px; border-radius: 50%; filter: blur(9px); opacity: .55; animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .9; transform: scale(1.06); } }
+  .glow { animation: shimmer 1.8s ease-in-out infinite; }
+  @keyframes shimmer { 50% { filter: brightness(1.5) drop-shadow(0 0 2px #fff); } }
+  .side { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .rank { color: var(--orange); font-size: 18px; line-height: 1; text-shadow: 1px 1px 0 #000; }
+  .sub { font-size: 13px; color: #c9b993; text-shadow: 1px 1px 0 #000; margin-bottom: 3px; }
+  .slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+  .slot { height: 22px; border: 1px solid #000; border-radius: 2px; display: grid; place-items: center; font-size: 13px;
+          background: linear-gradient(180deg, #3b3227, #262019); box-shadow: inset 1px 1px 0 rgba(255,255,255,.1); position: relative; }
+  .slot i { position: absolute; left: 2px; right: 2px; bottom: 2px; height: 3px; border-radius: 1px; }
+  .slot:hover { background: linear-gradient(180deg, #5c4c39, #3a3125); }
+  .goal { margin-top: auto; font-size: 13px; line-height: 1.05; color: var(--text); text-shadow: 1px 1px 0 #000; }
+  .goal b { color: var(--yellow); font-weight: normal; }
+
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-  .tile {
-    position: relative; height: 34px; display: flex; align-items: center; gap: 2px; padding: 0 5px 0 4px;
-    background: linear-gradient(180deg, var(--tile-hi), var(--tile) 45%, #2f281f);
-    border: 1px solid var(--tile-lo); border-radius: 3px;
-    box-shadow: inset 1px 1px 0 rgba(255,255,255,.12), inset -1px -1px 0 rgba(0,0,0,.4);
-  }
-  .tile.you { border-color: #1d2a38; box-shadow: inset 1px 1px 0 rgba(111,168,220,.35), inset -1px -1px 0 rgba(0,0,0,.4); }
-  .tile:hover, .tile.sel { background: linear-gradient(180deg, #74624a, #4a3e2f 45%, #3a3125); }
+  .tile { position: relative; height: 34px; display: flex; align-items: center; gap: 2px; padding: 0 5px 0 4px;
+          background: linear-gradient(180deg, var(--tile-hi), var(--tile) 45%, #2f281f);
+          border: 1px solid var(--tile-lo); border-radius: 3px;
+          box-shadow: inset 1px 1px 0 rgba(255,255,255,.12), inset -1px -1px 0 rgba(0,0,0,.4); }
+  .tile:hover { background: linear-gradient(180deg, #74624a, #4a3e2f 45%, #3a3125); }
   .icon { font-size: 17px; width: 22px; text-align: center; filter: drop-shadow(1px 1px 0 #000) saturate(.85); }
-  .lv { flex: 1; display: grid; grid-template-columns: 1fr; justify-items: end; line-height: 1; position: relative; height: 26px; }
-  .lv .a, .lv .b { position: absolute; font-size: 18px; color: var(--yellow); text-shadow: 1px 1px 0 #000; }
-  .lv .a { top: 1px; left: 2px; }
-  .lv .b { bottom: 0; right: 0; }
+  .lv { flex: 1; position: relative; height: 26px; }
+  .lv .a, .lv .b { position: absolute; font-size: 18px; color: var(--yellow); text-shadow: 1px 1px 0 #000; line-height: 1; }
+  .lv .a { top: 1px; left: 2px; } .lv .b { bottom: 0; right: 0; }
   .lv .slash { position: absolute; left: 50%; top: 50%; width: 1px; height: 22px; background: rgba(0,0,0,.55);
                transform: translate(-50%, -50%) rotate(35deg); box-shadow: 1px 0 0 rgba(255,255,255,.12); }
-  .today { position: absolute; top: 2px; right: 3px; width: 5px; height: 5px; border-radius: 50%;
-           background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .today { position: absolute; top: 2px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 4px var(--green); }
   .tile.total { justify-content: center; flex-direction: column; gap: 0; }
   .tile.total .k { font-size: 12px; white-space: nowrap; color: var(--yellow); text-shadow: 1px 1px 0 #000; }
-  .tile.total .v { font-size: 18px; color: var(--yellow); text-shadow: 1px 1px 0 #000; }
-  .info {
-    margin-top: 5px; min-height: 66px; padding: 5px 6px; border-radius: 3px; font-size: 15px; line-height: 1.1;
-    background: rgba(18,14,9,.72); border: 1px solid #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-  }
+  .tile.total .v { font-size: 18px; color: var(--yellow); text-shadow: 1px 1px 0 #000; line-height: 1; }
+
+  .info { margin-top: 5px; min-height: 70px; padding: 5px 6px; font-size: 15px; line-height: 1.1; }
   .info .name { color: var(--orange); font-size: 16px; text-shadow: 1px 1px 0 #000; }
   .info .row { display: flex; justify-content: space-between; text-shadow: 1px 1px 0 #000; }
   .info .row span:last-child { color: var(--yellow); }
   .info .about { color: #c9b993; font-size: 13px; margin-top: 2px; }
   .xpbar { height: 7px; margin-top: 3px; background: #2a0d0d; border: 1px solid #000; position: relative; }
   .xpbar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #57e07a, #1f9a42); }
-  .legend { display: flex; gap: 8px; margin-top: 4px; font-size: 12px; color: #b9a983; text-shadow: 1px 1px 0 #000; }
-  .legend b { display: inline-block; width: 7px; height: 7px; border: 1px solid #000; margin-right: 3px; vertical-align: -1px; }
-  .compact .grid, .compact .info, .compact .legend { display: none; }
+  .compact .grid, .compact .info, .compact .hero { display: none; }
   .levelup { animation: flash 1.2s ease-out 3; }
   @keyframes flash { 0% { box-shadow: 0 0 0 2px var(--gold), 0 0 16px var(--gold); } 100% { box-shadow: 0 0 0 0 transparent; } }
-  .banner {
-    position: fixed; left: 6px; right: 6px; top: 26px; padding: 8px; text-align: center; border-radius: 3px; z-index: 5;
-    background: rgba(12,9,5,.92); border: 1px solid var(--gold); color: var(--yellow); text-shadow: 1px 1px 0 #000;
-    font-size: 15px; opacity: 0; transform: translateY(-6px); transition: all .25s; pointer-events: none;
-  }
+  .banner { position: fixed; left: 6px; right: 6px; top: 26px; padding: 8px; text-align: center; border-radius: 3px; z-index: 5;
+            background: rgba(12,9,5,.94); border: 1px solid var(--gold); color: var(--yellow); text-shadow: 1px 1px 0 #000;
+            font-size: 15px; opacity: 0; transform: translateY(-6px); transition: all .25s; pointer-events: none; }
   .banner.show { opacity: 1; transform: none; }
   .banner .big { font-size: 20px; color: var(--orange); }
 </style>
 </head>
 <body>
 <div class="panel" id="panel">
-  <div class="bar" id="drag">
-    <span class="title" id="title">Skills</span>
-    <span><span class="btn" id="fold" title="Fold">▾</span></span>
+  <div class="bar"><span class="title" id="title">Skills</span><span class="btn" id="fold" title="Fold">▾</span></div>
+  <div class="hero inset">
+    <div class="stage" id="stage"></div>
+    <div class="side">
+      <div class="rank" id="rank"></div>
+      <div class="sub" id="sub"></div>
+      <div class="slots" id="slots"></div>
+      <div class="goal" id="goal"></div>
+    </div>
   </div>
   <div class="grid" id="grid"></div>
-  <div class="info" id="info"></div>
-  <div class="legend"><span><b style="background:#2f3d4c"></b>you</span><span><b style="background:#4a3e2f"></b>your agents</span><span><b style="background:var(--green);border-radius:50%"></b>xp today</span></div>
+  <div class="info inset" id="info"></div>
 </div>
 <div class="banner" id="banner"></div>
 <script>
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => Math.round(n).toLocaleString("en-US");
   const post = (msg) => window.webkit?.messageHandlers?.panel?.postMessage(msg);
+  const SLOT_ICON = { helm: "⛑️", body: "🛡️", amulet: "📿", cape: "🧣", weapon: "🗡️" };
   let stats = null, hovered = null, known = null;
 
-  function infoFor(s) {
-    if (!s) {
-      const today = stats.skills.reduce((a, x) => a + x.today_xp, 0);
-      const best = [...stats.skills].sort((a, b) => b.today_xp - a.today_xp)[0];
-      return `<div class="name">Total level: ${stats.total_level}</div>
-        <div class="row"><span>Total XP:</span><span>${fmt(stats.total_xp)}</span></div>
-        <div class="row"><span>XP today:</span><span>${fmt(today)}</span></div>
-        <div class="row"><span>Best today:</span><span>${best && best.today_xp ? best.icon + " " + best.name : "-"}</span></div>`;
+  // ---- gear ----
+  const tierIndex = (lv) => { let i = 0; stats.tiers.forEach((t, k) => { if (lv >= t.level) i = k; }); return i; };
+  const tierOf = (s) => stats.tiers[tierIndex(s.level)];
+  const itemName = (s, t) => (t.legend ? s.gear.legend : `${t.name} ${s.gear.item}`);
+  const nextTier = (s) => stats.tiers[tierIndex(s.level) + 1];
+  const xpAt = (lv) => stats.curve[lv];
+  const bySlot = (slot) => stats.skills.find((s) => s.gear?.slot === slot);
+
+  function shade(hex, k) {
+    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.max(0, Math.min(255, Math.round(v * k))));
+    return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+  }
+  const R = (x, y, w, h, c, cls = "") => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" class="${cls}"/>`;
+
+  function hero() {
+    const g = {};
+    for (const slot of ["helm", "body", "amulet", "cape", "weapon"]) {
+      const s = bySlot(slot);
+      g[slot] = s ? { t: tierOf(s), i: tierIndex(s.level) } : { t: stats.tiers[0], i: 0 };
     }
-    const max = s.next_xp == null;
-    const pct = max ? 100 : (100 * (s.xp - s.level_xp)) / (s.next_xp - s.level_xp);
+    const skin = "#e2b48c", skinD = "#b98a63", pants = "#4b3a2a", boot = "#2a1f16";
+    let o = "";
+    // cape (behind): grows longer and gets a trim as it upgrades
+    { const { t, i } = g.cape, len = 14 + Math.min(i, 8), cls = t.glow ? "glow" : "";
+      o += R(9, 14, 14, len, shade(t.color, .8), cls) + R(10, 14, 12, len - 1, t.color, cls);
+      if (t.trim) o += R(9, 13 + len, 14, 1, t.trim, cls); }
+    // legs and boots
+    o += R(12, 27, 3, 9, pants) + R(17, 27, 3, 9, pants) + R(11, 35, 4, 3, boot) + R(17, 35, 4, 3, boot);
+    // body armour
+    { const { t, i } = g.body, c = t.color, cls = t.glow ? "glow" : "";
+      o += R(10, 14, 12, 13, c, cls) + R(10, 14, 1, 13, shade(c, 1.25), cls) + R(21, 14, 1, 13, shade(c, .7), cls);
+      if (i >= 1) o += R(10, 25, 12, 2, shade(c, .6), cls) + R(15, 25, 2, 2, t.trim || "#d6b24a", cls);   // belt
+      if (i >= 3) o += R(8, 14, 4, 3, shade(c, 1.15), cls) + R(20, 14, 4, 3, shade(c, 1.15), cls);    // pauldrons
+      if (i >= 5) o += R(13, 17, 6, 1, t.trim || shade(c, 1.4), cls) + R(15, 17, 2, 6, t.trim || shade(c, 1.4), cls); // crest
+    }
+    // arms
+    { const c = g.body.i >= 2 ? shade(g.body.t.color, .9) : "#7a5c3e";
+      o += R(8, 17, 2, 8, c) + R(22, 17, 2, 8, c) + R(8, 25, 2, 2, skin) + R(22, 25, 2, 2, skin); }
+    // head
+    o += R(12, 4, 8, 10, skin) + R(12, 12, 8, 2, skinD) + R(14, 8, 1, 2, "#111") + R(17, 8, 1, 2, "#111");
+    // helm: hood at cloth, metal helm above, visor, plume, then a crown
+    { const { t, i } = g.helm, c = t.color, cls = t.glow ? "glow" : "";
+      if (i === 0) o += R(11, 3, 10, 4, c) + R(11, 3, 1, 9, c) + R(20, 3, 1, 9, c);
+      else {
+        o += R(11, 2, 10, 5, c, cls) + R(11, 2, 10, 1, shade(c, 1.3), cls) + R(11, 7, 2, 5, shade(c, .85), cls) + R(19, 7, 2, 5, shade(c, .85), cls);
+        if (i >= 4) o += R(13, 7, 6, 1, shade(c, .5), cls);                           // visor brow
+        if (i >= 7) o += R(15, 0, 2, 2, t.trim || "#d33", cls) + R(16, -1, 3, 1, t.trim || "#d33", cls); // plume
+        if (t.legend) o += R(11, 0, 1, 2, t.trim, cls) + R(15, -1, 2, 3, t.trim, cls) + R(20, 0, 1, 2, t.trim, cls); // crown
+      } }
+    // amulet
+    { const { t, i } = g.amulet, cls = t.glow ? "glow" : "";
+      o += R(14, 14, 1, 2, "#8a7a55") + R(17, 14, 1, 2, "#8a7a55") + R(15, 16, 2, 2 + (i >= 6 ? 1 : 0), t.color, cls); }
+    // weapon: stick, then a blade that grows, gains a guard, then a glowing edge
+    { const { t, i } = g.weapon, c = t.color, cls = t.glow ? "glow" : "";
+      if (i === 0) o += R(24, 15, 1, 13, "#7a5530");
+      else {
+        const len = 8 + i;
+        o += R(24, 26 - len, 2, len, c, cls) + R(24, 26 - len, 1, len, shade(c, 1.35), cls) + R(24, 26 - len - 1, 1, 1, shade(c, 1.35), cls);
+        o += R(22, 26, 6, 1, i >= 3 ? (t.trim || "#c9a640") : "#6b4a2a", cls) + R(24, 27, 2, 2, "#5a3a20");
+      } }
+    const best = Object.values(g).reduce((a, b) => (b.i > a.i ? b : a));
+    const aura = best.t.glow ? `<div class="aura" style="background:${best.t.color}"></div>` : "";
+    return aura + `<svg viewBox="-2 -2 36 42">${o}</svg>`;
+  }
+
+  function titleFor(total) { let t = stats.titles[0]?.[1] || ""; for (const [lv, name] of stats.titles) if (total >= lv) t = name; return t; }
+
+  function nearestGoal() {
+    let best = null;
+    for (const s of stats.skills) {
+      const nt = nextTier(s);
+      if (!s.gear || !nt) continue;
+      const need = xpAt(nt.level) - s.xp;
+      if (!best || need < best.need) best = { s, nt, need };
+    }
+    return best;
+  }
+
+  // ---- info box ----
+  function skillInfo(s) {
+    const max = s.next_xp == null, pct = max ? 100 : (100 * (s.xp - s.level_xp)) / (s.next_xp - s.level_xp);
     return `<div class="name">${s.icon} ${s.name}</div>
       <div class="row"><span>${s.name} XP:</span><span>${fmt(s.xp)}</span></div>
       ${max ? "" : `<div class="row"><span>Next level at:</span><span>${fmt(s.next_xp)}</span></div>
@@ -106,26 +192,57 @@
       <div class="xpbar"><i style="width:${pct.toFixed(1)}%"></i></div>
       <div class="about">${s.about}</div>`;
   }
+  function gearInfo(s) {
+    const t = tierOf(s), nt = nextTier(s);
+    return `<div class="name">${SLOT_ICON[s.gear.slot]} ${itemName(s, t)}</div>
+      <div class="row"><span>Powered by:</span><span>${s.icon} ${s.name} ${s.level}</span></div>
+      ${nt ? `<div class="row"><span>Next:</span><span>${itemName(s, nt)}</span></div>
+      <div class="row"><span>Needs:</span><span>${s.name} ${nt.level}</span></div>
+      <div class="row"><span>XP to go:</span><span>${fmt(xpAt(nt.level) - s.xp)}</span></div>`
+      : `<div class="about">Fully ascended. Nothing left to unlock.</div>`}`;
+  }
+  function overview() {
+    const today = stats.skills.reduce((a, x) => a + x.today_xp, 0);
+    const best = [...stats.skills].sort((a, b) => b.today_xp - a.today_xp)[0];
+    return `<div class="name">Total level: ${stats.total_level}</div>
+      <div class="row"><span>Total XP:</span><span>${fmt(stats.total_xp)}</span></div>
+      <div class="row"><span>XP today:</span><span>${fmt(today)}</span></div>
+      <div class="row"><span>Best today:</span><span>${best && best.today_xp ? best.icon + " " + best.name : "-"}</span></div>`;
+  }
+  function paintInfo() {
+    const [kind, id] = (hovered || "").split(":");
+    const s = stats.skills.find((x) => x.id === id);
+    $("info").innerHTML = !s ? overview() : kind === "gear" ? gearInfo(s) : skillInfo(s);
+  }
+  function hover(el, key) { el.onmouseenter = () => { hovered = key; paintInfo(); }; el.onmouseleave = () => { hovered = null; paintInfo(); }; }
 
-  function paintInfo() { $("info").innerHTML = infoFor(stats.skills.find((x) => x.id === hovered)); }
-
+  // ---- render ----
   function render(data) {
-    const first = !stats;
     stats = data;
     const ups = [];
-    if (known) for (const s of data.skills) if (known[s.id] && s.level > known[s.id]) ups.push(s);
+    if (known) for (const s of data.skills) if (known[s.id] && s.level > known[s.id]) ups.push({ s, from: known[s.id] });
     known = Object.fromEntries(data.skills.map((s) => [s.id, s.level]));
+
+    $("stage").innerHTML = hero();
+    $("rank").textContent = titleFor(data.total_level);
+    $("sub").textContent = `Total level ${data.total_level}`;
+    $("slots").innerHTML = data.skills.filter((s) => s.gear).map((s) => {
+      const t = tierOf(s);
+      return `<div class="slot" data-id="${s.id}">${SLOT_ICON[s.gear.slot] || "?"}<i style="background:${t.color}"></i></div>`;
+    }).join("");
+    const goal = nearestGoal();
+    $("goal").innerHTML = goal ? `Next unlock: <b>${itemName(goal.s, goal.nt)}</b><br>${goal.s.name} ${goal.nt.level} · ${fmt(goal.need)} XP to go` : "Everything unlocked.";
+
+    const upIds = ups.map((u) => u.s.id);
     $("grid").innerHTML = data.skills.map((s) => `
-      <div class="tile ${s.group === "you" ? "you" : ""} ${ups.includes(s) ? "levelup" : ""}" data-id="${s.id}">
+      <div class="tile ${upIds.includes(s.id) ? "levelup" : ""}" data-id="${s.id}">
         <span class="icon">${s.icon}</span>
         <span class="lv"><span class="a">${s.level}</span><span class="slash"></span><span class="b">${s.level}</span></span>
         ${s.today_xp > 0 ? '<span class="today"></span>' : ""}
-      </div>`).join("") + `
-      <div class="tile total"><span class="k">Total level:</span><span class="v">${data.total_level}</span></div>`;
-    for (const t of document.querySelectorAll(".tile[data-id]")) {
-      t.onmouseenter = () => { hovered = t.dataset.id; paintInfo(); };
-      t.onmouseleave = () => { hovered = null; paintInfo(); };
-    }
+      </div>`).join("") + `<div class="tile total"><span class="k">Total level:</span><span class="v">${data.total_level}</span></div>`;
+
+    document.querySelectorAll(".tile[data-id]").forEach((t) => hover(t, "skill:" + t.dataset.id));
+    document.querySelectorAll(".slot[data-id]").forEach((t) => hover(t, "gear:" + t.dataset.id));
     paintInfo();
     const stale = Date.now() - Date.parse(data.updated) > 10 * 60 * 1000;
     $("title").textContent = `Skills · ${data.total_level}` + (stale ? "  ⚠ not updating" : "");
@@ -134,33 +251,34 @@
   }
 
   function celebrate(ups) {
-    const s = ups[0];
-    $("banner").innerHTML = `<div class="big">🎉 Level up! 🎉</div>${s.icon} ${s.name} is now level ${s.level}.` +
-      (ups.length > 1 ? `<br>+${ups.length - 1} more skill${ups.length > 2 ? "s" : ""}` : "");
+    const { s, from } = ups[0];
+    const unlocked = stats.tiers.filter((t) => t.level > from && t.level <= s.level).pop();
+    $("banner").innerHTML = unlocked && s.gear
+      ? `<div class="big">✨ New unlock! ✨</div>${itemName(s, unlocked)}<br>${s.icon} ${s.name} is now level ${s.level}.`
+      : `<div class="big">🎉 Level up! 🎉</div>${s.icon} ${s.name} is now level ${s.level}.`;
+    if (ups.length > 1) $("banner").innerHTML += `<br>+${ups.length - 1} more skill${ups.length > 2 ? "s" : ""}`;
     $("banner").classList.add("show");
-    setTimeout(() => $("banner").classList.remove("show"), 6000);
-    jingle();
+    setTimeout(() => $("banner").classList.remove("show"), 7000);
+    jingle(!!unlocked);
   }
 
-  function jingle() {
+  function jingle(big) {
     try {
-      const ctx = new AudioContext();
-      [523, 659, 784, 1047, 784, 1047].forEach((f, i) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
+      const ctx = new AudioContext(), notes = big ? [392, 523, 659, 784, 1047, 1319] : [523, 659, 784, 1047];
+      notes.forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + i * 0.12;
         o.type = "square"; o.frequency.value = f;
-        g.gain.setValueAtTime(0.05, ctx.currentTime + i * 0.12);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.2);
-        o.connect(g).connect(ctx.destination);
-        o.start(ctx.currentTime + i * 0.12); o.stop(ctx.currentTime + i * 0.12 + 0.22);
+        g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.22);
       });
     } catch (e) {}
   }
 
   function fit() { requestAnimationFrame(() => post({ type: "size", height: Math.ceil($("panel").getBoundingClientRect().height) })); }
-
   $("fold").onclick = () => { document.body.classList.toggle("compact"); $("fold").textContent = document.body.classList.contains("compact") ? "▸" : "▾"; fit(); };
   window.render = render;
-  window.demoLevelUp = () => { const s = stats.skills[0]; known[s.id] = s.level - 1; render(stats); };
+  // Preview other levels without touching real data: window.preview([10, 40, 70, 90, 99])
+  window.preview = (levels) => { const d = JSON.parse(JSON.stringify(stats)); d.skills.forEach((s, i) => { s.level = levels[i] ?? s.level; }); d.total_level = d.skills.reduce((a, s) => a + s.level, 0); known = null; render(d); };
   post({ type: "ready" });
 </script>
 </body>

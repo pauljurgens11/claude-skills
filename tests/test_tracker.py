@@ -60,7 +60,11 @@ class Rig:
         self.dir = Path(tempfile.mkdtemp())
         self.projects = self.dir / "projects"
         self.projects.mkdir()
-        self.paths = tracker.Paths(config=ROOT / "skills.json", projects=self.projects, data=self.dir / "data")
+        cfg = json.loads((ROOT / "skills.json").read_text())
+        cfg.pop("xp_since", None)  # fixtures are dated 2026-11-05; count all of them
+        (self.dir / "skills.json").write_text(json.dumps(cfg))
+        self.paths = tracker.Paths(config=self.dir / "skills.json", projects=self.projects, data=self.dir / "data")
+        self.paths.wispr = self.dir / "flow.sqlite"  # never the real one
 
     def write(self, rel, lines, mode="w"):
         p = self.projects / rel
@@ -89,15 +93,16 @@ class TrackerTest(unittest.TestCase):
         self.rig.write("p/s1.jsonl", SESSION)
         raw = self.rig.raw()
         # two real turns (+ length bonus), not the notification / peer / tool_result lines
-        self.assertAlmostEqual(raw["prompting"], 2 + len("build me a skills panel") / 400
-                               + len("now ship it with ultracode") / 400, places=3)
-        self.assertEqual(raw["steering"], 2)  # one mid-turn message + one interrupt
-        self.assertEqual(raw["ultracode"], 3 + 1)  # Workflow weight 3 + the ultracode prompt
+        # two new prompts + one mid-turn message (+ length bonus) + an interrupt at half weight;
+        # not the notification / peer / tool_result / agent-brief lines
+        self.assertAlmostEqual(raw["prompting"], 3 + 0.5 + (len("build me a skills panel")
+                               + len("now ship it with ultracode") + len("make it customizable")) / 400, places=3)
 
-    def test_specific_rules_win_over_generic_shell(self):
+    def test_tools_land_in_the_right_skill_and_the_rest_earn_nothing(self):
         self.rig.write("p/s1.jsonl", SESSION)
         raw = self.rig.raw()
-        self.assertEqual((raw["shipping"], raw["testing"], raw["shell"], raw["scouting"]), (1, 1, 1, 1))
+        self.assertEqual(raw["shipping"], 1)  # the git commit
+        self.assertEqual(set(raw), {"prompting", "afk", "shipping"})  # pytest, ls, Read, Workflow earn nothing
 
     def test_forked_session_copy_counts_once(self):
         self.rig.write("p/s1.jsonl", SESSION)
@@ -141,6 +146,57 @@ class TrackerTest(unittest.TestCase):
         self.assertEqual(tracker.day_xp(10, 10, bal), bal["xp_per_typical_day"])
         self.assertLessEqual(tracker.day_xp(10_000, 10, bal), bal["max_day_multiple"] * bal["xp_per_typical_day"])
         self.assertGreater(tracker.day_xp(40, 10, bal), tracker.day_xp(30, 10, bal))  # more still helps a bit
+
+
+    def test_work_before_the_start_date_earns_no_xp_but_still_calibrates(self):
+        cfg = json.loads(self.rig.paths.config.read_text())
+        cfg["xp_since"] = "2026-11-05T10:00:03+00:00"  # after the first prompt (0s), before the mid-turn message (5s)
+        self.rig.paths.config.write_text(json.dumps(cfg))
+        self.rig.write("p/s1.jsonl", SESSION)
+        stats = tracker.run(self.rig.paths)
+        st = json.loads(self.rig.paths.state.read_text())
+        # the first prompt is before the start; the mid-turn (5s), interrupt (10s) and second prompt (12s) after
+        self.assertAlmostEqual(st["days"]["pre:2026-11-05"]["prompting"], 1 + len("build me a skills panel") / 400, places=3)
+        self.assertAlmostEqual(st["days"]["2026-11-05"]["prompting"], 2 + 0.5 + (len("make it customizable")
+                               + len("now ship it with ultracode")) / 400, places=3)
+        typical = st["calib"]["prompting"]["typical"]  # learned from the whole day, both sides
+        self.assertAlmostEqual(typical, st["days"]["pre:2026-11-05"]["prompting"] + st["days"]["2026-11-05"]["prompting"], places=3)
+        bal = cfg["balance"]
+        xp = next(s for s in stats["skills"] if s["id"] == "prompting")["xp"]
+        self.assertEqual(xp, int(tracker.day_xp(st["days"]["2026-11-05"]["prompting"], typical, bal)))  # post-start only
+
+    def test_wispr_words_count_once_even_when_reread(self):
+        import sqlite3
+        con = sqlite3.connect(self.rig.paths.wispr)
+        con.execute("CREATE TABLE History (transcriptEntityId TEXT, timestamp TEXT, numWords INT, status TEXT, formattedText TEXT)")
+        con.executemany("INSERT INTO History VALUES (?,?,?,?,?)", [
+            ("a", "2026-11-05 10:00:00.000 +00:00", 40, "formatted", "secret words"),
+            ("b", "2026-11-05 10:05:00.000 +00:00", 0, "raw_transcript", ""),      # still being dictated
+            ("c", "2026-11-05 10:06:00.000 +00:00", 12, "no_audio", ""),
+        ])
+        con.commit()
+        self.assertEqual(self.rig.raw()["wispr"], 40)
+        con.execute("UPDATE History SET numWords = 25, status = 'formatted' WHERE transcriptEntityId = 'b'")  # finalised later
+        con.commit()
+        con.close()
+        self.assertEqual(self.rig.raw()["wispr"], 65)
+        self.assertEqual(self.rig.raw()["wispr"], 65)  # third run: nothing new, nothing doubled
+
+    def test_messaging_counts_only_slack_and_whatsapp_time(self):
+        self.rig.paths.data.mkdir(parents=True, exist_ok=True)
+        t = 1793872800  # 2026-11-05 10:00 UTC
+        samples = [("com.tinyspeck.slackmacgap", 15)] * 4 + [("net.whatsapp.WhatsApp", 15)] * 2 + [("com.apple.Safari", 15)] * 8
+        with self.rig.paths.activity.open("w") as fh:
+            for i, (app, sec) in enumerate(samples):
+                fh.write(json.dumps({"t": t + 15 * i, "app": app, "s": sec}) + "\n")
+        self.assertAlmostEqual(self.rig.raw()["messaging"], 1.5)  # 6 samples x 15s
+
+    def test_a_year_of_maxed_out_days_reaches_the_low_90s_not_99(self):
+        cfg = json.loads((ROOT / "skills.json").read_text())
+        table = tracker.curve(cfg)
+        self.assertIn(tracker.level_for(365 * 3000, table), (91, 92, 93))
+        self.assertLess(tracker.level_for(365 * 1000, table), 85)  # a normal year is well short
+        self.assertLess(tracker.level_for(2 * 365 * 3000, table), 99 + 1)
 
 
 if __name__ == "__main__":
