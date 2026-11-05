@@ -63,7 +63,7 @@
   .tile.total .k { font-size: 12px; white-space: nowrap; color: var(--yellow); text-shadow: 1px 1px 0 #000; }
   .tile.total .v { font-size: 18px; color: var(--yellow); text-shadow: 1px 1px 0 #000; line-height: 1; }
 
-  .info { margin-top: 5px; min-height: 70px; padding: 5px 6px; font-size: 15px; line-height: 1.1; }
+  .info { margin-top: 5px; padding: 5px 6px; font-size: 15px; line-height: 1.1; }
   .info .name { color: var(--orange); font-size: 16px; text-shadow: 1px 1px 0 #000; }
   .info .row { display: flex; justify-content: space-between; text-shadow: 1px 1px 0 #000; }
   .info .row span:last-child { color: var(--yellow); }
@@ -209,10 +209,23 @@
       <div class="row"><span>XP today:</span><span>${fmt(today)}</span></div>
       <div class="row"><span>Best today:</span><span>${best && best.today_xp ? best.icon + " " + best.name : "-"}</span></div>`;
   }
-  function paintInfo() {
-    const [kind, id] = (hovered || "").split(":");
+  const infoFor = (key) => {
+    const [kind, id] = (key || "").split(":");
     const s = stats.skills.find((x) => x.id === id);
-    $("info").innerHTML = !s ? overview() : kind === "gear" ? gearInfo(s) : skillInfo(s);
+    return !s ? overview() : kind === "gear" ? gearInfo(s) : skillInfo(s);
+  };
+  function paintInfo() { $("info").innerHTML = infoFor(hovered); }
+
+  // Reserve room for the tallest hover text so hovering never resizes or clips the panel.
+  function reserveInfoHeight() {
+    const box = $("info");
+    box.style.minHeight = "0";
+    let tallest = 0;
+    for (const key of [null, ...stats.skills.flatMap((s) => ["skill:" + s.id, "gear:" + s.id])]) {
+      box.innerHTML = infoFor(key);
+      tallest = Math.max(tallest, box.getBoundingClientRect().height);
+    }
+    box.style.minHeight = Math.ceil(tallest) + "px";
   }
   function hover(el, key) { el.onmouseenter = () => { hovered = key; paintInfo(); }; el.onmouseleave = () => { hovered = null; paintInfo(); }; }
 
@@ -243,6 +256,7 @@
 
     document.querySelectorAll(".tile[data-id]").forEach((t) => hover(t, "skill:" + t.dataset.id));
     document.querySelectorAll(".slot[data-id]").forEach((t) => hover(t, "gear:" + t.dataset.id));
+    reserveInfoHeight();
     paintInfo();
     const stale = Date.now() - Date.parse(data.updated) > 10 * 60 * 1000;
     $("title").textContent = `Skills · ${data.total_level}` + (stale ? "  ⚠ not updating" : "");
@@ -277,6 +291,8 @@
   function fit() { requestAnimationFrame(() => post({ type: "size", height: Math.ceil($("panel").getBoundingClientRect().height) })); }
   $("fold").onclick = () => { document.body.classList.toggle("compact"); $("fold").textContent = document.body.classList.contains("compact") ? "▸" : "▾"; fit(); };
   window.render = render;
+  document.fonts.ready.then(() => { if (stats) { reserveInfoHeight(); paintInfo(); fit(); } });  // font changes text height
+  window.showInfo = (key) => { hovered = key; paintInfo(); };
   // Preview other levels without touching real data: window.preview([10, 40, 70, 90, 99])
   window.preview = (levels) => { const d = JSON.parse(JSON.stringify(stats)); d.skills.forEach((s, i) => { s.level = levels[i] ?? s.level; }); d.total_level = d.skills.reduce((a, s) => a + s.level, 0); known = null; render(d); };
   post({ type: "ready" });

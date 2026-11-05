@@ -135,6 +135,9 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         if let levels = env["CLAUDE_SKILLS_PREVIEW"] {  // e.g. "10,40,70,90,99" to see later gear; display only
             web.evaluateJavaScript("window.preview([\(levels)])")
         }
+        if let key = env["CLAUDE_SKILLS_HOVER"] {  // dev: show one hover state, e.g. "gear:afk"
+            web.evaluateJavaScript("window.showInfo('\(key)')")
+        }
     }
 }
 
