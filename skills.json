@@ -511,6 +511,51 @@
         "weight": 15,
         "about": "Glass bottle if you can find one.",
         "price": 400
+      },
+      {
+        "id": "v_candy",
+        "name": "Permission: one piece of candy",
+        "icon": "🍬",
+        "rarity": "common",
+        "kind": "voucher",
+        "weight": 12,
+        "about": "Just one. Make it a good one."
+      },
+      {
+        "id": "v_tea",
+        "name": "Permission: a cup of tea",
+        "icon": "🍵",
+        "rarity": "common",
+        "kind": "voucher",
+        "weight": 12,
+        "about": "Brew it properly, drink it slowly."
+      },
+      {
+        "id": "v_officewalk",
+        "name": "Permission: a 5-minute walk around the office",
+        "icon": "🚶",
+        "rarity": "rare",
+        "kind": "voucher",
+        "weight": 12,
+        "about": "Loop the office, say hi to someone."
+      },
+      {
+        "id": "v_massage",
+        "name": "Permission: the massage chair",
+        "icon": "💺",
+        "rarity": "ultra",
+        "kind": "voucher",
+        "weight": 12,
+        "about": "Full programme. No phone."
+      },
+      {
+        "id": "v_movie",
+        "name": "Permission: a movie night out",
+        "icon": "🎟️",
+        "rarity": "extraordinary",
+        "kind": "voucher",
+        "weight": 15,
+        "about": "Cinema, snacks, the whole thing."
       }
     ],
     "coins_per_xp": 0.05,
