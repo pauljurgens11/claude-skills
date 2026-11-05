@@ -240,6 +240,7 @@ class TrackerTest(unittest.TestCase):
         cfg = json.loads((ROOT / "skills.json").read_text())
         table = tracker.curve(cfg)
         self.assertIn(tracker.level_for(365 * 3000, table), (91, 92, 93))
+        self.assertEqual(tracker.level_for(320, table), 4)  # a couple of dictations is level 4, not 13
         self.assertLess(tracker.level_for(365 * 1000, table), 85)  # a normal year is well short
         self.assertLess(tracker.level_for(2 * 365 * 3000, table), 99 + 1)
 

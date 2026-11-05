@@ -8,9 +8,9 @@
   },
   "curve": {
     "max_level": 99,
-    "xp_at_max": 2188892,
-    "ratio": 1.104,
-    "_note": "fitted so 365 days at 3,000 XP per skill (a maxed-out day) reach level 92; level 99 is about two years of that"
+    "xp_at_max": 1852132,
+    "ratio": 1.07791,
+    "_note": "fitted so a third of a normal day (300 XP) reaches level 4 and 365 maxed-out days (3,000 XP each) reach level 92"
   },
   "skills": [
     {
