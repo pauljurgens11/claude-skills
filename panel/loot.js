@@ -161,11 +161,11 @@
     if (win.kind === "voucher" && !win.about) what = "A real-life reward. Claim it in your bag when you take it.";
     res.innerHTML = `<div class="rname r-${win.rarity}" style="color:${r.color}">${r.name}!</div>
       <div class="big">${win.icon} ${win.name}</div><div class="what">${what}</div>
-      <div class="bonus">+${fmt(got.bonus_gold)} bonus coins</div>
+      ${got.bonus_gold ? `<div class="bonus">+${fmt(got.bonus_gold)} bonus coins</div>` : ""}
       <div class="btns"><span class="gb" id="collect">Collect</span>${more > 0 ? `<span class="gb alt" id="nextC">Open next (${more})</span>` : ""}</div>`;
     res.classList.add("show");
     if (win.rarity === "extraordinary" || win.rarity === "ultra") confetti(win.rarity === "extraordinary" ? 90 : 40, r.color);
-    setTimeout(() => SFX.coin(4), 500);
+    if (got.bonus_gold || win.kind === "gold") setTimeout(() => SFX.coin(4), 500);
     const done = () => { busy = false; closeOverlay(); };
     $("collect").onclick = done;
     if ($("nextC")) $("nextC").onclick = () => { busy = false; const nx = L().unopened.find((c) => c.id !== lastOpened); if (nx) unbox(nx); else done(); };

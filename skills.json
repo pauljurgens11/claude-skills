@@ -112,8 +112,8 @@
           1
         ],
         "bonus_gold": [
-          5,
-          20
+          0,
+          0
         ],
         "color": "#a0703c"
       },
@@ -128,8 +128,8 @@
           3
         ],
         "bonus_gold": [
-          15,
-          40
+          0,
+          0
         ],
         "color": "#9aa3ad"
       },
@@ -144,8 +144,8 @@
           6
         ],
         "bonus_gold": [
-          40,
-          100
+          0,
+          0
         ],
         "color": "#ffd84a"
       },
@@ -160,8 +160,8 @@
           15
         ],
         "bonus_gold": [
-          150,
-          300
+          0,
+          0
         ],
         "color": "#ff5fd2"
       }
@@ -220,8 +220,8 @@
         "kind": "gold",
         "weight": 40,
         "gold": [
-          40,
-          90
+          15,
+          35
         ]
       },
       {
@@ -267,8 +267,8 @@
         "kind": "gold",
         "weight": 25,
         "gold": [
-          200,
-          400
+          60,
+          120
         ]
       },
       {
@@ -353,8 +353,8 @@
         "kind": "gold",
         "weight": 15,
         "gold": [
-          1000,
-          2000
+          300,
+          600
         ]
       },
       {
@@ -406,8 +406,8 @@
         "kind": "gold",
         "weight": 10,
         "gold": [
-          5000,
-          5000
+          1500,
+          1500
         ]
       },
       {
@@ -558,8 +558,8 @@
         "about": "Cinema, snacks, the whole thing."
       }
     ],
-    "coins_per_xp": 0.05,
-    "_balance_note": "One chest per 1,250 XP of combined work: 4 on a normal day (1,000 XP in each of 5 skills), at any level. A level-up upgrades the next chest one tier. Every 10th level of a skill also gives a milestone chest. Coins: 1 per 20 XP passively plus chest bonuses, about 300 on a normal day. They buy chests (a Wooden one is half a day) and big real-life rewards. Permissions only come from chests.",
+    "coins_per_xp": 0.02,
+    "_balance_note": "One chest per 1,250 XP of combined work: 4 on a normal day, at any level. A level-up upgrades the next chest one tier; every 10th level of a skill gives a milestone chest. Coins: 1 per 50 XP (about 100 on a normal day) plus coin drops; chests give no bonus coins. A cookie or a Wooden chest is about 1.5 days of work.",
     "xp_per_chest": 1250,
     "chest_prices": {
       "wooden": 150,
