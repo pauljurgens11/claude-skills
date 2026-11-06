@@ -81,9 +81,33 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
                 appendLine(act, to: "actions.jsonl")
                 refresh(force: true)
             }
+        case "hop":  // level-up or new chest: the window jumps
+            if let hs = body["heights"] as? [NSNumber] { hop(hs.map { CGFloat($0.doubleValue) }, base: hopTimer == nil ? panel.frame.origin : hopBase) }
+        case "sound":  // fallback when the page may not play audio
+            if let name = body["name"] as? String {
+                NSLog("ClaudeSkills: page audio blocked, playing system sound \(name)")
+                NSSound(named: NSSound.Name(name))?.play()
+            }
         case "size":
             if let h = body["height"] as? Double { resize(CGFloat(h) * scale) }
         default: break
+        }
+    }
+
+    var hopTimer: Timer?
+    var hopBase = NSPoint.zero
+    /// Bounce the window: one parabolic jump per height, about 0.3 s each, driven at 60 fps.
+    func hop(_ heights: [CGFloat], base: NSPoint) {
+        hopTimer?.invalidate()
+        hopBase = base
+        let jump = 0.3, start = Date()
+        hopTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { t in
+            let elapsed = Date().timeIntervalSince(start)
+            let i = Int(elapsed / jump)
+            guard i < heights.count else { self.panel.setFrameOrigin(base); t.invalidate(); self.hopTimer = nil; return }
+            let x = (elapsed - Double(i) * jump) / jump        // 0...1 within this jump
+            let y = heights[i] * CGFloat(4 * x * (1 - x))     // parabola: up, then down
+            self.panel.setFrameOrigin(NSPoint(x: base.x, y: base.y + y))
         }
     }
 
