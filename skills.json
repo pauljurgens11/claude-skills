@@ -45,7 +45,7 @@
       "rules": [
         {
           "afk_minutes": true,
-          "gap_cap_seconds": 120
+          "gap_cap_seconds": 1800
         }
       ]
     },

@@ -43,6 +43,8 @@ NOT_HUMAN = (
     "Background (from the session that started this one)",
 )
 INTERRUPT = "[Request interrupted by user"
+ORIGIN_SINCE = (2, 1, 255)
+TURN_END = ("end_turn", "stop_sequence")
 
 
 class Paths:
@@ -123,19 +125,37 @@ def classify_user_line(d):
     origin = d.get("origin")
     if isinstance(origin, dict) and origin.get("kind") != "human":
         return None
+    if origin is None and marks_origin(d.get("version")):
+        return None  # this version marks what you type; unmarked = resume summaries, slash commands, handoffs
     if not (text or has_image) or text.startswith(NOT_HUMAN):
         return None
     return ("turn", text)
 
 
+def marks_origin(version):
+    """Claude Code marks lines you type with origin.kind == "human" since 2.1.255."""
+    try:
+        return tuple(int(x) for x in version.split(".")[:3]) >= ORIGIN_SINCE
+    except (AttributeError, ValueError):
+        return False
+
+
 def classify_queued(d):
-    """Mid-turn messages you typed while the agent was working."""
+    """Mid-turn messages you typed while the agent was working (text, pasted images or both)."""
     a = d.get("attachment") or {}
     if a.get("type") != "queued_command" or d.get("isSidechain"):
         return None
-    if (a.get("origin") or {}).get("kind") != "human" or not isinstance(a.get("prompt"), str):
+    if (a.get("origin") or {}).get("kind") != "human":
         return None
-    return a.get("source_uuid") or d.get("uuid"), human_text(a["prompt"])
+    prompt = a.get("prompt")
+    if isinstance(prompt, list):
+        has_image = any(isinstance(b, dict) and b.get("type") == "image" for b in prompt)
+        prompt = "\n".join(b.get("text", "") for b in prompt if isinstance(b, dict) and b.get("type") == "text")
+        if not (human_text(prompt) or has_image):
+            return None
+    if not isinstance(prompt, str):
+        return None
+    return a.get("source_uuid") or d.get("uuid"), human_text(prompt)
 
 
 class Counter:
@@ -205,7 +225,7 @@ class Counter:
         for s in self.cfg["skills"]:
             for r in s["rules"]:
                 if r.get("afk_minutes"):
-                    self.add(day, s["id"], min(seconds, r.get("gap_cap_seconds", 120)) / 60)
+                    self.add(day, s["id"], min(seconds, r.get("gap_cap_seconds", 1800)) / 60)
 
 
 def handle(d, fstate, counter):
@@ -224,14 +244,16 @@ def handle(d, fstate, counter):
         if who:
             if counter.first_time(d.get("uuid")):
                 counter.prompt(day, *who)
-            fstate["prev_ts"] = ts  # your typing time is not agent time
+            fstate["prev_ts"], fstate["idle"] = ts, False  # your typing time is not agent time
             return
-    # agent time: main-thread events only (subagents run in parallel), each line once
+    # agent time: main-thread events only (subagents run in parallel), each line once.
+    # A gap after the agent ended its turn is waiting, not work, whatever wakes it next.
     if not d.get("isSidechain"):
         prev = fstate.get("prev_ts")
-        if prev is not None and ts > prev and counter.first_time(d.get("uuid")):
+        if prev is not None and ts > prev and counter.first_time(d.get("uuid")) and not fstate.get("idle"):
             counter.busy(day, ts - prev)
         fstate["prev_ts"] = ts
+        fstate["idle"] = typ == "assistant" and (d.get("message") or {}).get("stop_reason") in TURN_END
     if typ == "assistant":
         for b in (d.get("message") or {}).get("content") or []:
             if isinstance(b, dict) and b.get("type") == "tool_use" and counter.first_time(b.get("id")):

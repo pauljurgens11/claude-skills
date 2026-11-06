@@ -33,12 +33,16 @@ The hard problem was separating what **you** do from what your agents do.
 
 - **Prompting (you).** A user line in a transcript counts only if Claude Code marks it
   `origin.kind == "human"`. That excludes tool results, task notifications, hook output and
-  messages from other sessions, which also arrive as "user" lines. Messages typed while the
+  messages from other sessions, which also arrive as "user" lines. Since Claude Code
+  2.1.255 every typed line carries the marker, so an unmarked line from those versions is
+  the app's own (resume summaries, slash commands, session handoffs) and never counts. Messages typed while the
   agent works arrive as `queued_command` attachments, so those count too. Interrupts count
   half. Longer prompts earn a small bonus.
-- **AFK Coding (agents).** The time between consecutive transcript events while the agent
-  works, summed across sessions, with any gap over 2 minutes dropped (that is you away, not
-  the agent).
+- **AFK Coding (agents).** The time between consecutive transcript events while a turn is
+  running, summed across sessions. A gap after an assistant message with stop_reason
+  end_turn is waiting, not work, and counts 0 whatever wakes the agent next (a notification,
+  another session). A gap inside a turn (a long build, a subagent) counts in full, capped at
+  30 minutes for a laptop that slept mid-turn.
 - **Wispr Flow (you).** Word counts from Wispr's local sqlite, opened read-only. The text
   is never read.
 - **Messaging (you).** The Swift panel writes the front app to `activity.jsonl` every 15 s,

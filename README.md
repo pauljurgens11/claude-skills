@@ -15,8 +15,8 @@ leaves your machine: it only reads `~/.claude/projects/**/*.jsonl`.
 
 | Skill | Counts | Source |
 |---|---|---|
-| 💬 Prompting | Every message you send to Claude Code: new prompts, mid-turn corrections (interrupts count half). Longer prompts earn a bit more. Only messages Claude Code marks as typed by a human. | `~/.claude/projects` transcripts |
-| 💤 AFK Coding | Minutes your agents work between your messages, summed across sessions. Idle gaps over 2 min do not count. | transcripts |
+| 💬 Prompting | Every message you send to Claude Code: new prompts, mid-turn corrections (interrupts count half). Longer prompts earn a bit more. Only messages Claude Code marks as typed by a human (not resume summaries, slash commands, handoffs or notifications); pasted screenshots count. | `~/.claude/projects` transcripts |
+| 💤 AFK Coding | Minutes your agents work between your messages, summed across sessions. Counts only while a turn is running (long builds and subagent waits included, up to 30 min per gap); time after an agent finishes does not count. | transcripts |
 | 🎙️ Wispr Flow | Words you dictate. Reads only word counts and times, never the text. | Wispr Flow's local database, read-only |
 | 📨 Messaging | Active minutes with Slack or WhatsApp in front (only if you touched keyboard or mouse in the last minute), plus minutes in calls: Google Meet, Zoom, Teams, huddles. A call is any app holding the microphone for over 2 minutes, so short dictations never count. | the panel samples the front app and the microphone every 15 s |
 | 🚀 Shipping | Pull requests GitHub merged with you as author. | `gh` (GitHub CLI), every 10 min |

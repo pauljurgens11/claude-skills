@@ -35,7 +35,7 @@ def tool(i, name, inp=None, tid=None, uid=None):
 
 def queued(i, prompt, origin="human"):
     return line(i, type="attachment", attachment={
-        "type": "queued_command", "prompt": prompt, "source_uuid": f"src-{i:04d}-xxxxxxxxxxxxxx",
+        "type": "queued_command", "prompt": prompt, "source_uuid": f"src-xxxxxxxxxxxxxx-{i:04d}",
         "origin": {"kind": origin}})
 
 
@@ -56,6 +56,9 @@ SESSION = [
     tool(11, "Read"),
     user(12, "now ship it with ultracode"),
     user(13, "Background (from the session that started this one):\nbrief"),  # agent-written brief
+    # current Claude Code marks what you type; an unmarked line is the app's (resume summary, handoff)
+    user(14, "This session is being continued from a previous conversation.", origin=None, version="2.1.309"),
+    queued(15, [{"type": "image", "source": {}}, {"type": "text", "text": "look at this"}]),  # you, with a screenshot
 ]
 
 
@@ -99,8 +102,8 @@ class TrackerTest(unittest.TestCase):
         # two real turns (+ length bonus), not the notification / peer / tool_result lines
         # two new prompts + one mid-turn message (+ length bonus) + an interrupt at half weight;
         # not the notification / peer / tool_result / agent-brief lines
-        self.assertAlmostEqual(raw["prompting"], 3 + 0.5 + (len("build me a skills panel")
-                               + len("now ship it with ultracode") + len("make it customizable")) / 400, places=3)
+        self.assertAlmostEqual(raw["prompting"], 4 + 0.5 + (len("build me a skills panel") + len("now ship it with ultracode")
+                               + len("make it customizable") + len("look at this")) / 400, places=3)
 
     def test_tools_land_in_the_right_skill_and_the_rest_earn_nothing(self):
         self.rig.write("p/s1.jsonl", SESSION)
@@ -134,16 +137,22 @@ class TrackerTest(unittest.TestCase):
             fh.write(SESSION[6][25:] + "\n" + "".join(x + "\n" for x in SESSION[7:]))
         self.assertEqual(self.rig.raw(), expected)
 
-    def test_agent_time_skips_idle_gaps_and_your_typing(self):
+    def test_agent_time_is_work_inside_a_turn_not_waiting_after_it(self):
+        at = lambda ln, hhmmss: ln.replace(TS.format(0), f"2026-11-05T{hhmmss}.000Z")
+        done = lambda uid: line(0, type="assistant", uid=uid, message={"content": [{"type": "text", "text": "done"}],
+                                                                     "stop_reason": "end_turn"})
         lines = [
-            user(0, "go"),
-            tool(30, "Read"),            # 30s of agent work
-            tool(59, "Read"),            # +29s
-            user(0, "next", uid=99).replace(TS.format(0), "2026-11-05T11:00:00.000Z"),  # an hour later: you
-            tool(0, "Read", tid="toolu_late", uid=100).replace(TS.format(0), "2026-11-05T11:10:00.000Z"),  # gap capped at 120s
+            at(user(0, "go"), "10:00:00"),
+            at(tool(0, "Read", tid="t1", uid=1), "10:00:30"),       # 30s of work
+            at(done(2), "10:00:59"),                                # +29s, then the agent ends its turn
+            at(user(0, "<task-notification>x</task-notification>", origin="task-notification", uid=3), "11:00:00"),  # waited: 0
+            at(tool(0, "Read", tid="t2", uid=4), "11:00:20"),       # +20s, woken by the notification
+            at(user(0, "next", uid=5), "11:30:00"),                 # you
+            at(tool(0, "Bash", tid="t3", uid=6), "11:40:00"),       # +10 min: a long build mid-turn counts in full
+            at(tool(0, "Read", tid="t4", uid=7), "13:00:00"),       # +80 min mid-turn (laptop asleep?): capped at 30
         ]
         self.rig.write("p/s1.jsonl", lines)
-        self.assertAlmostEqual(self.rig.raw()["afk"], (30 + 29 + 120) / 60, places=3)
+        self.assertAlmostEqual(self.rig.raw()["afk"], (30 + 29 + 20 + 600 + 1800) / 60, places=3)
 
     def test_grinding_one_day_cannot_outweigh_regular_days(self):
         bal = json.loads((ROOT / "skills.json").read_text())["balance"]
@@ -170,10 +179,10 @@ class TrackerTest(unittest.TestCase):
         self.rig.write("p/s1.jsonl", SESSION)
         stats = tracker.run(self.rig.paths)
         st = json.loads(self.rig.paths.state.read_text())
-        # the first prompt is before the start; the mid-turn (5s), interrupt (10s) and second prompt (12s) after
+        # the first prompt is before the start; the mid-turns (5s, 15s), interrupt (10s) and second prompt (12s) after
         self.assertAlmostEqual(st["days"]["pre:2026-11-05"]["prompting"], 1 + len("build me a skills panel") / 400, places=3)
-        self.assertAlmostEqual(st["days"]["2026-11-05"]["prompting"], 2 + 0.5 + (len("make it customizable")
-                               + len("now ship it with ultracode")) / 400, places=3)
+        self.assertAlmostEqual(st["days"]["2026-11-05"]["prompting"], 3 + 0.5 + (len("make it customizable")
+                               + len("now ship it with ultracode") + len("look at this")) / 400, places=3)
         typical = st["calib"]["prompting"]["typical"]  # learned from the whole day, both sides
         self.assertAlmostEqual(typical, st["days"]["pre:2026-11-05"]["prompting"] + st["days"]["2026-11-05"]["prompting"], places=3)
         bal = cfg["balance"]
