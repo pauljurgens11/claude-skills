@@ -49,21 +49,24 @@ def earn(cfg, ledger, skills, streak_now, now):
     levels = {s["id"]: s["level"] for s in skills}
     last_levels = ledger.setdefault("levels_at_last_chest", dict(levels))
     total = sum(s["xp"] for s in skills)
-    for k in range(ledger.get("meter_chests", 0) + 1, int(total // lc["xp_per_chest"]) + 1):
+    per = lc["xp_per_chest"]
+    k = ledger.get("meter_chests", 0)
+    last = ledger.get("meter_last_xp", k * per)  # XP where the last meter chest dropped
+    while total >= last + per:  # counts from the last chest, so changing the rate never jumps back
+        k, last = k + 1, last + per
         cid = f"meter-{k}"
-        tier, why = pick(cid + ":tier", tiers), f"Your work filled the chest meter ({lc['xp_per_chest']:,} XP)"
+        tier, why = pick(cid + ":tier", tiers), f"Your work filled the chest meter ({per:,} XP)"
         ups = [s["name"] for s in skills if levels[s["id"]] > last_levels.get(s["id"], 1)]
         if ups:  # levelled up since the last chest: this one is a tier better
             tier, why = better(tier), f"{why}; upgraded because {', '.join(ups)} levelled up"
             last_levels.update(levels)
         add(cid, tier, why)
-        ledger["meter_chests"] = k
+    ledger["meter_chests"], ledger["meter_last_xp"] = k, last
     for s in skills:
         for lv in range(lc["level_chest_every"], s["level"] + 1, lc["level_chest_every"]):
             add(f"milestone-{s['id']}-{lv}", better(pick(f"milestone-{s['id']}-{lv}", tiers)),
                 f"{s['name']} reached level {lv} (milestone)")
-    have = total - ledger.get("meter_chests", 0) * lc["xp_per_chest"]
-    ledger["meter"] = {"have": int(have), "need": lc["xp_per_chest"],
+    ledger["meter"] = {"have": int(total - last), "need": per,
                        "upgrade": any(levels[i] > last_levels.get(i, 1) for i in levels)}
     if streak_now["days"]:
         for m in lc["streak_milestones"]:

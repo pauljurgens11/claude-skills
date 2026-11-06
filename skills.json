@@ -559,8 +559,8 @@
       }
     ],
     "coins_per_xp": 0.02,
-    "_balance_note": "One chest per 1,250 XP of combined work: 4 on a normal day, at any level. A level-up upgrades the next chest one tier; every 10th level of a skill gives a milestone chest. Coins: 1 per 50 XP (about 100 on a normal day) plus coin drops; chests give no bonus coins. A cookie or a Wooden chest is about 1.5 days of work.",
-    "xp_per_chest": 1250,
+    "_balance_note": "One chest per 2,500 XP of combined work: 2 on a normal day, at any level. A level-up upgrades the next chest one tier; every 10th level of a skill gives a milestone chest. Coins: 1 per 50 XP (about 100 on a normal day) plus coin drops; chests give no bonus coins. A cookie or a Wooden chest is about 1.5 days of work.",
+    "xp_per_chest": 2500,
     "chest_prices": {
       "wooden": 150,
       "iron": 400,
