@@ -64,10 +64,10 @@
       "id": "messaging",
       "name": "Messaging",
       "icon": "📨",
-      "about": "Active minutes with Slack or WhatsApp in front (idle time does not count).",
+      "about": "Active minutes with Slack or WhatsApp in front (idle time does not count), plus minutes in calls: Meet, Zoom, Teams, huddles (any app holding the microphone over 2 minutes).",
       "rules": [
         {
-          "app_minutes": "(?i)slack|whatsapp",
+          "app_minutes": "(?i)slack|whatsapp|^meeting$",
           "default_typical": 60
         }
       ]

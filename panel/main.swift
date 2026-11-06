@@ -1,6 +1,7 @@
 // Floating, always-on-top skills panel. Reruns tracker.py every minute and
 // pushes stats.json into panel/index.html.
 import Cocoa
+import CoreAudio
 import WebKit
 
 let env = ProcessInfo.processInfo.environment
@@ -12,6 +13,8 @@ let dataDir = URL(fileURLWithPath: env["CLAUDE_SKILLS_DATA"]
     ?? NSHomeDirectory() + "/Library/Application Support/ClaudeSkills")
 let sampleSeconds: Double = 15
 let idleLimit = Double(env["CLAUDE_SKILLS_IDLE_LIMIT"] ?? "60") ?? 60
+// A call (Meet, Zoom, Teams, a huddle) = some app holding a microphone this long; dictation is shorter.
+let meetingAfter = Double(env["CLAUDE_SKILLS_MEETING_AFTER"] ?? "120") ?? 120
 let refreshSeconds = Double(env["CLAUDE_SKILLS_REFRESH"] ?? "60") ?? 60
 let scale = CGFloat(Double(env["CLAUDE_SKILLS_SCALE"] ?? "1.5") ?? 1.5)
 let width: CGFloat = 230 * scale
@@ -162,12 +165,33 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         do { try p.run(); running = p; startedAt = Date() } catch { NSLog("ClaudeSkills: cannot start \(python): \(error)") }
     }
 
-    /// Which app you are actively using: one line per 15s, only if you touched keyboard or mouse in the last minute.
+    /// One line per 15s in activity.jsonl. In a call you often touch nothing, so a microphone held
+    /// for over meetingAfter seconds is logged as "meeting" (with the minutes before it, once);
+    /// otherwise the front app, only if you touched keyboard or mouse in the last minute.
+    var micSince: Date?
+    var micCredited = false
     func sampleFrontApp() {
+        let now = Date()
+        if micInUse() {
+            micSince = micSince ?? now
+            let held = now.timeIntervalSince(micSince!)
+            if held >= meetingAfter {
+                append(app: "meeting", seconds: micCredited ? sampleSeconds : held, at: now)
+                micCredited = true
+                return
+            }
+        } else {
+            micSince = nil
+            micCredited = false
+        }
         let anyInput = CGEventType(rawValue: ~0)!
         let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyInput)
         guard idle < idleLimit, let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
-        let line = "{\"t\":\(Int(Date().timeIntervalSince1970)),\"app\":\"\(app)\",\"s\":\(Int(sampleSeconds))}\n"
+        append(app: app, seconds: sampleSeconds, at: now)
+    }
+
+    func append(app: String, seconds: Double, at t: Date) {
+        let line = "{\"t\":\(Int(t.timeIntervalSince1970)),\"app\":\"\(app)\",\"s\":\(Int(seconds))}\n"
         let url = dataDir.appendingPathComponent("activity.jsonl")
         try? FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true)
         if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil) }
@@ -175,6 +199,28 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         defer { try? fh.close() }
         _ = try? fh.seekToEnd()
         try? fh.write(contentsOf: Data(line.utf8))
+    }
+
+    /// True while any app records from any input device (built-in mic, AirPods, a USB headset).
+    func micInUse() -> Bool {
+        let system = AudioObjectID(kAudioObjectSystemObject)
+        var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices,
+                                              mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        var size: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(system, &addr, 0, nil, &size) == noErr else { return false }
+        var ids = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(system, &addr, 0, nil, &size, &ids) == noErr else { return false }
+        return ids.contains { id in
+            var streams = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreams,
+                                                     mScope: kAudioObjectPropertyScopeInput, mElement: kAudioObjectPropertyElementMain)
+            var n: UInt32 = 0
+            guard AudioObjectGetPropertyDataSize(id, &streams, 0, nil, &n) == noErr, n > 0 else { return false }
+            var running = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+                                                     mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+            var on: UInt32 = 0
+            var sz = UInt32(MemoryLayout<UInt32>.size)
+            return AudioObjectGetPropertyData(id, &running, 0, nil, &sz, &on) == noErr && on != 0
+        }
     }
 
     func push() {
