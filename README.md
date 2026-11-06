@@ -23,14 +23,14 @@ leaves your machine: it only reads `~/.claude/projects/**/*.jsonl`.
 
 ## Balance
 
-- Each skill learns your normal day (median of your active days, frozen after 5). A normal day is 1,000 XP in every skill, so no skill outruns the others.
+- Each skill learns your normal day (median of your finished active days, frozen after 5). Until it freezes, a skill's level can still shift a little at midnight. A normal day is 1,000 XP in every skill, so no skill outruns the others.
 - Past 2 normal days the gain turns logarithmic; one day is capped at 12.
 - A year of maxed-out days (about 3,000 XP per skill per day) reaches level 92; 99 takes about two years of that.
 - `xp_since` in `skills.json` is the moment everyone started at level 1. Older history still teaches the panel your normal day.
 
 ## Chests, streaks and the shop
 
-- **Chests**: one per 2,500 XP of combined work (2 on a normal day, at any level). A level-up upgrades your next chest; every 10th level of a skill gives a milestone chest; streaks of 7/30/100/200/365 days give golden or mythic chests. Each chest says why it came.
+- **Chests**: one per 2,500 XP of combined work (2 on a normal day, at any level). From level 15 every level-up gives a chest (below that, a 1 in 3 chance), and a level-up also upgrades your next meter chest; every 10th level of a skill gives a milestone chest; streaks of 7/30/100/200/365 days give golden or mythic chests. Each chest says why it came.
 - **Unboxing**: a reel spins and lands on one drop: Common, Rare, Ultra Rare or Extraordinary. Drops: XP potions and elixirs, Streak Shields, pets, titles, coins, and real-life permissions (look out the window, a cookie, a pudding, an afternoon off). Permissions only come from chests.
 - **Coins**: 1 per 50 XP plus coin drops (chests give no bonus coins). They buy chests and big real-life rewards in the shop.
 - **Streak**: a day counts once your skills earn 500 XP together. One missed day a week is free; Streak Shields cover more.

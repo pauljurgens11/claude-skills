@@ -66,6 +66,14 @@ def earn(cfg, ledger, skills, streak_now, now):
         for lv in range(lc["level_chest_every"], s["level"] + 1, lc["level_chest_every"]):
             add(f"milestone-{s['id']}-{lv}", better(pick(f"milestone-{s['id']}-{lv}", tiers)),
                 f"{s['name']} reached level {lv} (milestone)")
+    every, lu = lc["level_chest_every"], lc["level_up_chest"]
+    start = ledger.setdefault("levelup_from", {})  # no chests for level-ups before this rule existed
+    for s in skills:
+        for lv in range(start.setdefault(s["id"], s["level"]) + 1, s["level"] + 1):
+            cid = f"levelup-{s['id']}-{lv}"
+            if lv % every == 0 or (lv < lu["always_from"] and roll(cid) >= lu["chance_below"]):
+                continue  # milestone levels have their own chest; below always_from, a 1-in-3 roll
+            add(cid, pick(cid + ":tier", tiers), f"{s['name']} reached level {lv}")
     ledger["meter"] = {"have": int(total - last), "need": per,
                        "upgrade": any(levels[i] > last_levels.get(i, 1) for i in levels)}
     if streak_now["days"]:

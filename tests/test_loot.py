@@ -88,6 +88,20 @@ class LootTest(unittest.TestCase):
         self.assertEqual(len(inv["boosts"]), 1)
         self.assertEqual(inv["boost_active"][0], 100)
 
+    def test_level_ups_give_chests_from_15_and_sometimes_before_never_for_old_levels(self):
+        def chests(levels):
+            ledger = {}
+            for lv in levels:
+                loot.earn(CFG, ledger, [skill(f"s{i}", 0, lv[i]) for i in range(len(lv))], NO_STREAK, now=1)
+            return {c for c in ledger["chests"] if c.startswith("levelup-")}
+        got = chests([[12] * 200, [40] * 200])  # 200 skills climb 12 -> 40
+        per_level = {lv: sum(f"-{lv}" == c[c.rfind("-"):] for c in got) for lv in range(13, 41)}
+        self.assertTrue(all(per_level[lv] == 200 for lv in range(15, 41) if lv % 10))  # always from 15
+        self.assertEqual(per_level[20] + per_level[30] + per_level[40], 0)  # milestones are not doubled
+        self.assertTrue(100 < per_level[13] + per_level[14] < 170)  # about 1 in 3 of 400 below 15
+        self.assertEqual(chests([[30] * 5]), set())  # levels you had before the rule give nothing
+        self.assertEqual(chests([[12] * 200, [40] * 200, [3] * 200, [40] * 200]), got)  # a dip never re-drops
+
     def test_you_can_only_equip_what_you_own_in_its_own_slot(self):
         ledger = self.big_ledger()
         cid, pet = first_with(ledger, kind="pet")

@@ -93,6 +93,11 @@
   },
   "loot": {
     "level_chest_every": 10,
+    "level_up_chest": {
+      "always_from": 15,
+      "chance_below": 0.3333,
+      "_note": "every level-up from level 15 gives a chest; below that a 1 in 3 chance"
+    },
     "streak_milestones": [
       7,
       30,

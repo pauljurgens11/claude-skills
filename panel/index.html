@@ -170,6 +170,7 @@
   .lvlnums { position: relative; font-size: 30px; color: var(--yellow); text-shadow: 2px 2px 0 #000; animation: fadeIn .4s .35s both; }
   .lvlnums .from { opacity: .55; } .lvlnums .to { color: #fff6a0; text-shadow: 2px 2px 0 #000, 0 0 10px #ffd84a; }
   .lvlnext { position: relative; font-size: 15px; color: #c9b993; margin-top: 2px; }
+  .lvlchest { position: relative; font-size: 17px; color: #ffd84a; margin-top: 6px; text-shadow: 1px 1px 0 #000; }
   .lvlmore { position: relative; font-size: 14px; color: var(--yellow); margin-top: 6px; }
   .lvlhint { position: absolute; bottom: 8px; font-size: 13px; color: #8a7a5a; animation: pulse 1.4s infinite; }
 </style>
@@ -256,7 +257,7 @@
     paintInfo();
     const stale = Date.now() - Date.parse(data.updated) > 10 * 60 * 1000;
     if (stale) $("title").textContent = "⚠ not updating";
-    if (ups.length) celebrate(ups);
+    if (ups.length) celebrate(ups, newChests);
     else if (newChests) chestDropped(newChests);
     fit();
   }
@@ -287,13 +288,13 @@
   };
   const CHEST_CHIME = () => [784, 1047, 1319, 1568].forEach((f, i) => note(f, i * 0.07, 0.25, "triangle", 0.05));
 
-  function celebrate(ups) {
+  function celebrate(ups, chests = 0) {
     post({ type: "hop", heights: [34, 20, 9] });
     play(FANFARE, "Hero");
     const ov = $("overlay");
     if (ov.classList.contains("show")) {  // mid-unboxing: don't steal the screen, show a banner
       const { s } = ups[0];
-      window.banner(`<div class="big">🎉 Level up! 🎉</div>${s.icon} ${s.name} is now level ${s.level}.`);
+      window.banner(`<div class="big">🎉 Level up! 🎉</div>${s.icon} ${s.name} is now level ${s.level}.${chests ? " 🎁 +" + chests + " chest" : ""}`);
       return;
     }
     const main = ups[0], s = main.s, more = ups.slice(1);
@@ -306,6 +307,7 @@
       <div class="lvlskill">${s.name}</div>
       <div class="lvlnums"><span class="from">${main.from}</span> ➜ <span class="to">${s.level}</span></div>
       <div class="lvlnext">${toNext}</div>
+      ${chests ? `<div class="lvlchest">🎁 +${chests} chest${chests > 1 ? "s" : ""} in your tray</div>` : ""}
       ${more.length ? `<div class="lvlmore">${more.map((u) => `${u.s.icon} ${u.s.name} ${u.s.level}`).join(" · ")}</div>` : ""}
       <div class="lvlhint">click to continue</div></div>`;
     lvlConfetti(ov, 110);
@@ -341,7 +343,7 @@
   $("fold").onclick = () => { document.body.classList.toggle("compact"); $("fold").textContent = document.body.classList.contains("compact") ? "▸" : "▾"; fit(); };
   window.render = render;
   // dev: replay a level-up on the first skill without touching real data
-  window.testLevelUp = () => { known[stats.skills[0].id] = stats.skills[0].level - 1; render(stats); };
+  window.testLevelUp = (withChest) => { if (withChest) knownChests = []; known[stats.skills[0].id] = stats.skills[0].level - 1; render(stats); };
   window.testChest = () => { knownChests = []; render(stats); };
   let infoOverride = null;
   window.showInfoHTML = (html) => { infoOverride = html; paintInfo(); };

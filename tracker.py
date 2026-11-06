@@ -372,7 +372,9 @@ def calibrate(cfg, st):
             day = merged.setdefault(key.removeprefix("pre:"), {})
             for k, v in bucket.items():
                 day[k] = day.get(k, 0) + v
-        vals = [d[sid] for d in merged.values() if d.get(sid, 0) > 0]
+        today = datetime.now().astimezone().strftime("%Y-%m-%d")
+        done = {k: d for k, d in merged.items() if k != today} or merged  # today is still growing
+        vals = [d[sid] for d in done.values() if d.get(sid, 0) > 0]
         default = next((r["default_typical"] for r in s["rules"] if "default_typical" in r), None)
         typical = median(vals) if len(vals) >= need or default is None else default
         st["calib"][sid] = {"typical": typical or 1, "frozen": len(vals) >= need}

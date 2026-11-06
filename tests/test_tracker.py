@@ -152,6 +152,17 @@ class TrackerTest(unittest.TestCase):
         self.assertGreater(tracker.day_xp(40, 10, bal), tracker.day_xp(30, 10, bal))  # more still helps a bit
 
 
+    def test_working_more_today_never_lowers_your_level(self):
+        cfg = tracker.load_config(ROOT / "skills.json")
+        today = tracker.datetime.now().astimezone().strftime("%Y-%m-%d")
+        typical = []
+        for words_today in (100, 5_000):  # dictating more today must not raise the bar for past days
+            st = {"calib": {}, "days": {"2026-11-03": {"wispr": 100}, "pre:2026-11-04": {"wispr": 300},
+                                        today: {"wispr": words_today}}}
+            tracker.calibrate(cfg, st)
+            typical.append(st["calib"]["wispr"]["typical"])
+        self.assertEqual(typical, [200, 200])
+
     def test_work_before_the_start_date_earns_no_xp_but_still_calibrates(self):
         cfg = json.loads(self.rig.paths.config.read_text())
         cfg["xp_since"] = "2026-11-05T10:00:03+00:00"  # after the first prompt (0s), before the mid-turn message (5s)

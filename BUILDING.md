@@ -62,7 +62,8 @@ Correctness details that matter:
 Raw counts differ wildly (thousands of dictated words vs a handful of merged PRs), so each
 skill calibrates to **your** normal day:
 
-1. Take the median raw amount over your active days for that skill. Freeze it after 5 days
+1. Take the median raw amount over your finished active days for that skill (never today:
+   today is still growing, and working more today must not raise the bar for past days). Freeze it after 5 days
    so it stops chasing you.
 2. A normal day is worth 1,000 XP in every skill.
 3. Past 2 normal days, extra work counts logarithmically. One day is capped at 12 normal days.
@@ -85,7 +86,9 @@ Same for `loot_since`, which starts coins and the streak.
   chest opens once, a voucher is used once, and coins never go negative.
 - **Rates:** one chest per 2,500 XP (about 2 on a normal day), the same at every level. A
   level-up upgrades the next chest one tier. Milestone chests come every 10th level and at
-  streak days 7/30/100/200/365.
+  streak days 7/30/100/200/365. From level 15 every level-up gives a chest; below 15 a
+  level-up has a 1 in 3 chance (a roll of the chest id). Levels you had before this rule
+  existed give nothing.
 - **Coins:** 1 per 50 XP plus coin drops. They buy chests and real-life rewards in the shop.
   Real-life permissions (look out the window, a cookie) only come from chests.
 - **Streak:** a day counts at 500 XP. One missed day per week is free; Streak Shields cover
