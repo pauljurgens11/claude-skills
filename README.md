@@ -1,4 +1,4 @@
-# Claude Skills
+# Prompt Quest
 
 An old-school MMO skills panel for your Claude Code usage. It floats in the corner of
 your Mac, always on top, and levels up 5 skills from your real Claude Code transcripts.

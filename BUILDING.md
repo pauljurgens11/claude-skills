@@ -1,4 +1,4 @@
-# How Claude Skills works and how it was built
+# How Prompt Quest works and how it was built
 
 Read this before you build a variation. The README covers using it. This file covers the
 pieces, the decisions behind them, and where to change things.
