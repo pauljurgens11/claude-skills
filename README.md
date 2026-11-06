@@ -19,7 +19,7 @@ leaves your machine: it only reads `~/.claude/projects/**/*.jsonl`.
 | 💤 AFK Coding | Minutes your agents work between your messages, summed across sessions. Idle gaps over 2 min do not count. | transcripts |
 | 🎙️ Wispr Flow | Words you dictate. Reads only word counts and times, never the text. | Wispr Flow's local database, read-only |
 | 📨 Messaging | Active minutes with Slack or WhatsApp in front. Only counted if you touched keyboard or mouse in the last minute. | the panel samples the front app every 15 s |
-| 🚀 Shipping | Commits, pushes and pull requests your agents make. | transcripts |
+| 🚀 Shipping | Pull requests GitHub merged with you as author. | `gh` (GitHub CLI), every 10 min |
 
 ## Balance
 
@@ -35,6 +35,8 @@ leaves your machine: it only reads `~/.claude/projects/**/*.jsonl`.
 - **Coins**: 1 per 50 XP plus coin drops (chests give no bonus coins). They buy chests and big real-life rewards in the shop.
 - **Streak**: a day counts once your skills earn 500 XP together. One missed day a week is free; Streak Shields cover more.
 - Everything is deterministic: the same work always drops the same chests, and nothing can be spent twice. Earned chests live in `loot.json`, your clicks in `actions.jsonl`.
+
+How it works inside, and how to build a variation: [BUILDING.md](BUILDING.md).
 
 ## Customize
 
