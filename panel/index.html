@@ -63,7 +63,11 @@
 
   /* ---- loot: chips, tray, overlay, unboxing, bag ---- */
   .bar { gap: 4px; }
-  #chips { display: flex; gap: 3px; margin-left: auto; margin-right: 4px; }
+  /* a long equipped title keeps its line; the chips drop to a second row instead of clipping */
+  .bar { height: auto; min-height: 18px; flex-wrap: wrap; row-gap: 3px; }
+  .bar .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bar .right { display: flex; align-items: center; margin-left: auto; }
+  #chips { display: flex; gap: 3px; margin-right: 4px; }
   .chip { font-size: 14px; color: var(--yellow); text-shadow: 1px 1px 0 #000; padding: 0 4px; height: 16px; line-height: 16px;
           background: rgba(0,0,0,.35); border: 1px solid #000; border-radius: 3px; white-space: nowrap; }
   .chip.warn { color: #ffb4a0; }
@@ -177,7 +181,7 @@
 </head>
 <body>
 <div class="panel" id="panel">
-  <div class="bar"><span class="title" id="title">Skills</span><span id="chips"></span><span class="btn" id="fold" title="Fold">▾</span></div>
+  <div class="bar"><span class="title" id="title">Skills</span><span class="right"><span id="chips"></span><span class="btn" id="fold" title="Fold">▾</span></span></div>
   <div id="tray"></div>
   <div class="grid" id="grid"></div>
   <div class="info inset" id="info"></div>

@@ -57,7 +57,8 @@
   function bar() {
     const st = S.streak, l = L(), b = l.boost_active;
     const flame = st.days >= 100 ? "f3" : st.days >= 30 ? "f2" : st.days >= 7 ? "f1" : "";
-    const boost = b ? `<span class="chip boost" title="XP boost">${b[2] >= 2 ? "⚗️" : "🧪"}×${b[2]} ${Math.ceil((b[1] - Date.now() / 1000) / 60)}m</span>` : "";
+    const mins = b ? Math.ceil((b[1] - Date.now() / 1000) / 60) : 0;  // icon says the size (🧪 ×1.5, ⚗️ ×2+); keeps the bar narrow
+    const boost = b ? `<span class="chip boost" title="XP boost ×${b[2]}, ${mins} min left">${b[2] >= 2 ? "⚗️" : "🧪"}${mins}m</span>` : "";
     $("chips").innerHTML = `${boost}
       <span class="chip ${st.today_done ? "" : "warn"}" id="streakChip" title="Streak">
         <span class="flame ${flame}">🔥</span>${st.days}</span>
